@@ -95,7 +95,7 @@ func Generate(
 			return internal.Replacement{}, err
 		}
 		for _, n := range fld.Names {
-			lw.WriteLinef("\t%s %s,", n.Name, typStr)
+			lw.WriteLinef("\t%s %s,", strings.ToLower(n.Name), typStr)
 		}
 	}
 
