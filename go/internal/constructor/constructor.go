@@ -95,7 +95,7 @@ func Generate(
 			return internal.Replacement{}, err
 		}
 		for _, n := range fld.Names {
-			lw.WriteLinef("\t%s %s,", strings.ToLower(n.Name), typStr)
+			lw.WriteLinef("\t%s %s,", lowerFirstRune(n.Name), typStr)
 		}
 	}
 
@@ -104,7 +104,7 @@ func Generate(
 
 	for _, fld := range structType.Fields.List {
 		for _, n := range fld.Names {
-			lw.WriteLinef("\t\t%s: %s,", n.Name, strings.ToLower(n.Name))
+			lw.WriteLinef("\t\t%s: %s,", n.Name, lowerFirstRune(n.Name))
 		}
 	}
 
@@ -115,6 +115,12 @@ func Generate(
 		Range: asthelper.RangeFromNode(fset, typeDecl),
 		Lines: lw.TakeLines(),
 	}, err
+}
+
+func lowerFirstRune(str string) string {
+	rs := []rune(str)
+	rs[0] = unicode.ToLower(rs[0])
+	return string(rs)
 }
 
 func formatNodeToString(n ast.Node) (string, error) {
