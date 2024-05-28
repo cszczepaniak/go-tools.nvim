@@ -1,1 +1,1 @@
-vim.print("build")
+vim.print(none["hey"])
