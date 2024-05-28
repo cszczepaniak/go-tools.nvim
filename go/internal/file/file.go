@@ -1,4 +1,4 @@
-package internal
+package file
 
 type Position struct {
 	Line int `json:"ln"`

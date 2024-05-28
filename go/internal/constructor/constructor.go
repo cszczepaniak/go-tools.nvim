@@ -10,18 +10,19 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/cszczepaniak/go-tools/internal"
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
+	"github.com/cszczepaniak/go-tools/internal/file"
+	"github.com/cszczepaniak/go-tools/internal/linewriter"
 )
 
 func Generate(
 	filePath string,
-	pos internal.Position,
-) (internal.Replacement, error) {
+	pos file.Position,
+) (file.Replacement, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
 	if err != nil {
-		return internal.Replacement{}, err
+		return file.Replacement{}, err
 	}
 
 	var typeDecl *ast.GenDecl
@@ -54,19 +55,19 @@ func Generate(
 	}
 
 	if typeSpec == nil || typeSpec.Name == nil {
-		return internal.Replacement{}, nil
+		return file.Replacement{}, nil
 	}
 
 	structType, ok := typeSpec.Type.(*ast.StructType)
 	if !ok {
-		return internal.Replacement{}, nil
+		return file.Replacement{}, nil
 	}
 
-	lw := &internal.LineWriter{}
+	lw := &linewriter.Writer{}
 
 	err = format.Node(lw, fset, typeDecl)
 	if err != nil {
-		return internal.Replacement{}, err
+		return file.Replacement{}, err
 	}
 
 	lw.Flush()
@@ -88,7 +89,7 @@ func Generate(
 	for _, fld := range structType.Fields.List {
 		typStr, err := formatNodeToString(fld.Type)
 		if err != nil {
-			return internal.Replacement{}, err
+			return file.Replacement{}, err
 		}
 		for _, n := range fld.Names {
 			lw.WriteLinef("\t%s %s,", lowerFirstRune(n.Name), typStr)
@@ -107,7 +108,7 @@ func Generate(
 	lw.WriteLinef("\t}")
 	lw.WriteLinef("}")
 
-	return internal.Replacement{
+	return file.Replacement{
 		Range: asthelper.RangeFromNode(fset, typeDecl),
 		Lines: lw.TakeLines(),
 	}, err

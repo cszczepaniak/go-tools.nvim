@@ -1,22 +1,22 @@
-package internal
+package linewriter
 
 import (
 	"bytes"
 	"fmt"
 )
 
-type LineWriter struct {
+type Writer struct {
 	hasLeftover bool
 	curr        []byte
 	lns         []string
 }
 
-func (lw *LineWriter) WriteLinef(f string, args ...any) *LineWriter {
+func (lw *Writer) WriteLinef(f string, args ...any) *Writer {
 	lw.lns = append(lw.lns, fmt.Sprintf(f, args...))
 	return lw
 }
 
-func (lw *LineWriter) Write(bs []byte) (int, error) {
+func (lw *Writer) Write(bs []byte) (int, error) {
 	lw.hasLeftover = false
 	for {
 		idx := bytes.IndexByte(bs, '\n')
@@ -35,7 +35,7 @@ func (lw *LineWriter) Write(bs []byte) (int, error) {
 	return len(bs), nil
 }
 
-func (lw *LineWriter) Flush() {
+func (lw *Writer) Flush() {
 	if lw.hasLeftover {
 		lw.lns = append(lw.lns, string(lw.curr))
 		lw.hasLeftover = false
@@ -43,7 +43,7 @@ func (lw *LineWriter) Flush() {
 	}
 }
 
-func (lw *LineWriter) TakeLines() []string {
+func (lw *Writer) TakeLines() []string {
 	lw.Flush()
 	return lw.lns
 }

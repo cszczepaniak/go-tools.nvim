@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/cszczepaniak/go-tools/internal"
-	"github.com/cszczepaniak/go-tools/internal/constructor"
+	"github.com/cszczepaniak/go-tools/internal/file"
 )
 
 type foobar struct {
@@ -41,7 +41,7 @@ func main() {
 		panic("arg must be of the form: filename,linenumber,colnumber")
 	}
 
-	file := parts[0]
+	filePath := parts[0]
 	lineStr := parts[1]
 	colStr := parts[2]
 
@@ -55,7 +55,7 @@ func main() {
 		panic(err)
 	}
 
-	replacement, err := constructor.Generate(file, internal.Position{
+	repl, err := internal.GenerateReplacements(filePath, file.Position{
 		Line: line,
 		Col:  col,
 	})
@@ -63,11 +63,11 @@ func main() {
 		panic(err)
 	}
 
-	if len(replacement.Lines) == 0 {
+	if len(repl.Lines) == 0 {
 		return
 	}
 
-	err = json.NewEncoder(os.Stdout).Encode(replacement)
+	err = json.NewEncoder(os.Stdout).Encode(repl)
 	if err != nil {
 		panic(err)
 	}
