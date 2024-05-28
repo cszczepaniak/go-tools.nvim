@@ -14,10 +14,6 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 )
 
-type foo struct {
-	a string
-}
-
 func Generate(
 	filePath string,
 	pos internal.Position,
