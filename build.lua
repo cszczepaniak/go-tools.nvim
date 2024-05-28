@@ -1,1 +1,3 @@
-vim.print(none["hey"])
+vim.system({ "go", "install" }, {
+	cwd = "./go",
+})
