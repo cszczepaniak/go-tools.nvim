@@ -105,6 +105,10 @@ func Generate(
 		return true
 	})
 
+	if surrounding == nil || assnStmt == nil {
+		return file.Replacement{}, nil
+	}
+
 	var funcTyp types.Type
 	switch s := surrounding.(type) {
 	case *ast.FuncDecl:
