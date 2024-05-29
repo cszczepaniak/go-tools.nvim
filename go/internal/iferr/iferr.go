@@ -18,10 +18,10 @@ import (
 )
 
 func Generate(
-	filePath string,
+	contents file.Contents,
 	pos file.Position,
 ) (file.Replacement, error) {
-	dir, _ := filepath.Split(filePath)
+	dir, _ := filepath.Split(contents.AbsPath)
 
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,

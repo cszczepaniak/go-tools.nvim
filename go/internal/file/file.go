@@ -1,5 +1,10 @@
 package file
 
+type Contents struct {
+	AbsPath  string
+	Contents []byte
+}
+
 type Position struct {
 	Line int `json:"ln"`
 	Col  int `json:"col"`

@@ -7,16 +7,16 @@ import (
 )
 
 func GenerateReplacements(
-	filePath string,
+	contents file.Contents,
 	pos file.Position,
 ) (file.Replacement, error) {
-	fns := []func(string, file.Position) (file.Replacement, error){
+	fns := []func(file.Contents, file.Position) (file.Replacement, error){
 		constructor.Generate,
 		iferr.Generate,
 	}
 
 	for _, fn := range fns {
-		r, err := fn(filePath, pos)
+		r, err := fn(contents, pos)
 		if err != nil {
 			return file.Replacement{}, err
 		}

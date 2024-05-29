@@ -14,7 +14,10 @@ function M.run()
 	local res = vim.system({
 		"go-tools",
 		file .. "," .. tostring(line) .. "," .. tostring(col),
-	}, { text = true }):wait()
+	}, {
+		text = true,
+		stdin = vim.api.nvim_buf_get_lines(0, 0, -1, false),
+	}):wait()
 
 	if res.code ~= 0 then
 		vim.notify("go-tools exited with non-zero code\n" .. "stdout:\n" .. res.stderr, vim.log.levels.ERROR, {})

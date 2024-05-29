@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -11,6 +13,11 @@ import (
 )
 
 func main() {
+	fileContents, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		panic(err)
+	}
+
 	if len(os.Args) < 2 {
 		panic("must provide one arg")
 	}
@@ -24,6 +31,11 @@ func main() {
 	lineStr := parts[1]
 	colStr := parts[2]
 
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		panic(err)
+	}
+
 	line, err := strconv.Atoi(lineStr)
 	if err != nil {
 		panic(err)
@@ -34,10 +46,16 @@ func main() {
 		panic(err)
 	}
 
-	repl, err := internal.GenerateReplacements(filePath, file.Position{
-		Line: line,
-		Col:  col,
-	})
+	repl, err := internal.GenerateReplacements(
+		file.Contents{
+			AbsPath:  absPath,
+			Contents: fileContents,
+		},
+		file.Position{
+			Line: line,
+			Col:  col,
+		},
+	)
 	if err != nil {
 		panic(err)
 	}

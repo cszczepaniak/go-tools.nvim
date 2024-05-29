@@ -16,11 +16,11 @@ import (
 )
 
 func Generate(
-	filePath string,
+	contents file.Contents,
 	pos file.Position,
 ) (file.Replacement, error) {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, filePath, nil, parser.AllErrors)
+	f, err := parser.ParseFile(fset, contents.AbsPath, nil, parser.AllErrors)
 	if err != nil {
 		return file.Replacement{}, err
 	}
