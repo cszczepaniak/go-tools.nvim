@@ -207,18 +207,21 @@ func Generate(
 	} else {
 		fmt.Fprint(w, "return ")
 
-		// Loop over all but the last result, printing the zero value for each one.
-		for i := 0; i < totalResults-1; i++ {
-			r := sig.Results().At(i)
-			err := printZeroValue(w, r.Type())
-			if err != nil {
-				return file.Replacement{}, err
+		for i := 0; i < totalResults; i++ {
+			if i == errIdx {
+				fmt.Fprint(w, errName)
+			} else {
+				r := sig.Results().At(i)
+				err := printZeroValue(w, r.Type())
+				if err != nil {
+					return file.Replacement{}, err
+				}
 			}
-			fmt.Fprint(w, ", ")
-		}
 
-		// Print the error as the last result.
-		fmt.Fprint(w, errName)
+			if i < totalResults-1 {
+				fmt.Fprint(w, ", ")
+			}
+		}
 	}
 	w.Flush()
 	w.WriteLinef("%s}", strings.Repeat("\t", finalIndent))
