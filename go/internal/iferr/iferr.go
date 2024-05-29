@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"go/types"
 	"io"
 	"path/filepath"
@@ -25,6 +27,12 @@ func Generate(
 
 	pkgs, err := packages.Load(&packages.Config{
 		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
+		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
+			if filename == contents.AbsPath {
+				src = contents.Contents
+			}
+			return parser.ParseFile(fset, filename, src, parser.AllErrors|parser.ParseComments)
+		},
 	}, dir)
 	if err != nil {
 		return file.Replacement{}, err
@@ -84,7 +92,6 @@ func Generate(
 		rhs := assn.Rhs[0]
 		typ, ok := pkg.TypesInfo.Types[rhs]
 		if !ok {
-			fmt.Println(pkg.TypesInfo)
 			return false
 		}
 
