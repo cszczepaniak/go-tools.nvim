@@ -20,7 +20,12 @@ func Generate(
 	pos file.Position,
 ) (file.Replacement, error) {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, contents.AbsPath, nil, parser.AllErrors)
+	f, err := parser.ParseFile(
+		fset,
+		contents.AbsPath,
+		contents.Contents,
+		parser.AllErrors,
+	)
 	if err != nil {
 		return file.Replacement{}, err
 	}
