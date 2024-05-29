@@ -153,7 +153,7 @@ func Generate(
 		idx = 0
 	}
 
-	if t == nil || t.Obj().Pkg() != nil || t.Obj().Name() != "error" {
+	if !isErrorType(t) {
 		return file.Replacement{}, nil
 	}
 
@@ -187,18 +187,39 @@ func Generate(
 
 	w.Flush()
 	w.WriteLinef("%sif %s != nil {", strings.Repeat("\t", finalIndent), errName)
-	fmt.Fprintf(w, "%sreturn ", strings.Repeat("\t", finalIndent+1))
 
-	for i := 0; i < sig.Results().Len()-1; i++ {
-		r := sig.Results().At(i)
-		err := printZeroValue(w, r.Type())
-		if err != nil {
-			return file.Replacement{}, err
+	totalResults := sig.Results().Len()
+
+	errIdx := -1
+	for i := 0; i < totalResults; i++ {
+		v := sig.Results().At(i)
+		if isErrorType(v.Type()) {
+			errIdx = i
+			break
 		}
-		fmt.Fprint(w, ", ")
 	}
 
-	fmt.Fprint(w, errName)
+	fmt.Fprint(w, strings.Repeat("\t", finalIndent+1))
+	if totalResults == 0 || errIdx == -1 {
+		// If the function we're in does not return anything or doesn't return an error
+		// anywhere, just panic with the error.
+		fmt.Fprintf(w, "panic(%s)", errName)
+	} else {
+		fmt.Fprint(w, "return ")
+
+		// Loop over all but the last result, printing the zero value for each one.
+		for i := 0; i < totalResults-1; i++ {
+			r := sig.Results().At(i)
+			err := printZeroValue(w, r.Type())
+			if err != nil {
+				return file.Replacement{}, err
+			}
+			fmt.Fprint(w, ", ")
+		}
+
+		// Print the error as the last result.
+		fmt.Fprint(w, errName)
+	}
 	w.Flush()
 	w.WriteLinef("%s}", strings.Repeat("\t", finalIndent))
 
@@ -235,4 +256,13 @@ func printZeroValue(w io.Writer, typ types.Type) error {
 	}
 
 	return nil
+}
+
+func isErrorType(typ types.Type) bool {
+	n, ok := typ.(*types.Named)
+	if !ok {
+		return false
+	}
+
+	return n != nil && n.Obj().Pkg() == nil && n.Obj().Name() == "error"
 }
