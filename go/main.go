@@ -80,6 +80,13 @@ func fooBar() (int, file.Range, error) {
 		return 0, file.Range{}, err
 	}
 
+	foo := func() (bool, int, error) {
+		_, err := iAmFallible()
+		_ = err
+		return false, 0, nil
+	}
+	_ = foo
+
 	return 0, file.Range{}, nil
 }
 

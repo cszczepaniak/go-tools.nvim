@@ -45,9 +45,12 @@ func Generate(
 	pkg := pkgs[0]
 	var astFile *ast.File
 
+	nodeContainsPos := func(n ast.Node) bool {
+		return asthelper.RangeFromNode(pkg.Fset, n).ContainsPos(pos)
+	}
+
 	for _, f := range pkg.Syntax {
-		rng := asthelper.RangeFromNode(pkg.Fset, f)
-		if rng.ContainsPos(pos) {
+		if nodeContainsPos(f) {
 			astFile = f
 			break
 		}
@@ -62,11 +65,22 @@ func Generate(
 	var replacementRange file.Range
 	var assnStmt *ast.AssignStmt
 	var finalIndent int
+	var surrounding ast.Node
 	astutil.Apply(astFile, func(c *astutil.Cursor) bool {
 		_, ok := c.Node().(*ast.BlockStmt)
 		if ok {
 			indent++
 			return true
+		}
+
+		fd, ok := c.Node().(*ast.FuncDecl)
+		if ok && nodeContainsPos(fd) {
+			surrounding = fd
+		}
+
+		fl, ok := c.Node().(*ast.FuncLit)
+		if ok && nodeContainsPos(fl) {
+			surrounding = fl
 		}
 
 		assn, ok := c.Node().(*ast.AssignStmt)
@@ -80,55 +94,9 @@ func Generate(
 		}
 		replacementRange = rng
 		assnStmt = assn
-
-		if len(assn.Lhs) == 0 {
-			return false
-		}
-
-		if len(assn.Rhs) != 1 {
-			return false
-		}
-
-		rhs := assn.Rhs[0]
-		typ, ok := pkg.TypesInfo.Types[rhs]
-		if !ok {
-			return false
-		}
-
-		var t *types.Named
-		var idx int
-		switch typ := typ.Type.(type) {
-		case *types.Tuple:
-			val := typ.At(typ.Len() - 1).Type()
-			if tt, ok := val.(*types.Named); ok {
-				t = tt
-				idx = typ.Len() - 1
-			} else {
-				return false
-			}
-		case *types.Named:
-			t = typ
-			idx = 0
-		}
-
-		if t == nil || t.Obj().Pkg() != nil || t.Obj().Name() != "error" {
-			return false
-		}
-
-		if idx >= len(assn.Lhs) {
-			return false
-		}
-
-		lhs := assn.Lhs[idx]
-		ident, ok := lhs.(*ast.Ident)
-		if !ok {
-			return false
-		}
-
-		errName = ident.Name
 		finalIndent = indent
 
-		return false
+		return true
 	}, func(c *astutil.Cursor) bool {
 		_, ok := c.Node().(*ast.BlockStmt)
 		if ok {
@@ -137,29 +105,75 @@ func Generate(
 		return true
 	})
 
+	var funcTyp types.Type
+	switch s := surrounding.(type) {
+	case *ast.FuncDecl:
+		t, ok := pkg.TypesInfo.Defs[s.Name]
+		if !ok {
+			return file.Replacement{}, errors.New("type info not found for func declaration")
+		}
+		funcTyp = t.Type()
+	case *ast.FuncLit:
+		t, ok := pkg.TypesInfo.Types[s]
+		if !ok {
+			return file.Replacement{}, errors.New("type info not found for func literal")
+		}
+		funcTyp = t.Type
+	default:
+		return file.Replacement{}, fmt.Errorf("dev error: unexpected surrounding %T", surrounding)
+	}
+
+	if len(assnStmt.Lhs) == 0 {
+		return file.Replacement{}, nil
+	}
+
+	if len(assnStmt.Rhs) != 1 {
+		return file.Replacement{}, nil
+	}
+
+	rhs := assnStmt.Rhs[0]
+	typ, ok := pkg.TypesInfo.Types[rhs]
+	if !ok {
+		return file.Replacement{}, nil
+	}
+
+	var t *types.Named
+	var idx int
+	switch typ := typ.Type.(type) {
+	case *types.Tuple:
+		val := typ.At(typ.Len() - 1).Type()
+		if tt, ok := val.(*types.Named); ok {
+			t = tt
+			idx = typ.Len() - 1
+		} else {
+			return file.Replacement{}, nil
+		}
+	case *types.Named:
+		t = typ
+		idx = 0
+	}
+
+	if t == nil || t.Obj().Pkg() != nil || t.Obj().Name() != "error" {
+		return file.Replacement{}, nil
+	}
+
+	if idx >= len(assnStmt.Lhs) {
+		return file.Replacement{}, nil
+	}
+
+	lhs := assnStmt.Lhs[idx]
+	ident, ok := lhs.(*ast.Ident)
+	if !ok {
+		return file.Replacement{}, nil
+	}
+
+	errName = ident.Name
+
 	if errName == "" {
 		return file.Replacement{}, nil
 	}
 
-	var fnDecl *ast.FuncDecl
-	for _, decl := range astFile.Decls {
-		if !asthelper.RangeFromNode(pkg.Fset, decl).ContainsPos(pos) {
-			continue
-		}
-
-		fd, ok := decl.(*ast.FuncDecl)
-		if ok {
-			fnDecl = fd
-			break
-		}
-	}
-
-	typ, ok := pkg.TypesInfo.Defs[fnDecl.Name]
-	if !ok {
-		return file.Replacement{}, errors.New("no type information for func decl")
-	}
-
-	sig, ok := typ.Type().(*types.Signature)
+	sig, ok := funcTyp.(*types.Signature)
 	if !ok {
 		return file.Replacement{}, errors.New("not a signature")
 	}
