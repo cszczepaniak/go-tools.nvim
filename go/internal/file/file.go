@@ -28,7 +28,7 @@ func (r Range) containsLine(col int) bool {
 }
 
 func (r Range) ContainsPos(pos Position) bool {
-	return (r.isOneLine() && r.containsCol(pos.Col)) || r.containsLine(pos.Line)
+	return (r.isOneLine() && r.Start.Line == pos.Line && r.containsCol(pos.Col)) || r.containsLine(pos.Line)
 }
 
 type Replacement struct {
