@@ -5,30 +5,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/cszczepaniak/go-tools/internal"
 	"github.com/cszczepaniak/go-tools/internal/file"
-)
-
-type foobar struct {
-	a    string
-	b    int
-	C    []byte
-	D, E *sync.Mutex
-}
-
-type (
-	Baz struct {
-		a    string
-		b    int
-		C    []byte
-		D, E *sync.Mutex
-	}
-
-	Qux struct {
-		x, y, z int
-	}
 )
 
 func main() {
@@ -71,4 +50,25 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func fooBar() (int, file.Range, error) {
+	_, err := iAmFallible()
+	if err != nil {
+		_, err = iAmFallible()
+		if err != nil {
+			return 0, file.Range{}, err
+		}
+		return 0, file.Range{}, err
+	}
+
+	return 0, file.Range{}, nil
+}
+
+func iAmFallible() (int, error) {
+	return 0, nil
+}
+
+func iAmFallible2() (int, error) {
+	return 0, nil
 }
