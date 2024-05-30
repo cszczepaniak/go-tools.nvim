@@ -8,7 +8,7 @@ import (
 )
 
 func TestLineWriter_Write(t *testing.T) {
-	lw := &LineWriter{}
+	lw := &Writer{}
 
 	fmt.Fprint(lw, "abc")
 	fmt.Fprint(lw, "\n")
@@ -22,7 +22,7 @@ func TestLineWriter_Write(t *testing.T) {
 		"123",
 	}, lns)
 
-	lw = &LineWriter{}
+	lw = &Writer{}
 
 	fmt.Fprint(lw, "abc\n")
 
