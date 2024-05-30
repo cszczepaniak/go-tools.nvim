@@ -14,35 +14,37 @@ import (
 type Loader struct {
 	contents file.Contents
 
-	fset *token.FileSet
+	Fset *token.FileSet
 
-	f     *ast.File
-	fOnce sync.Once
-
-	pkg     *packages.Package
-	pkgOnce sync.Once
+	fileOnce func() (*ast.File, error)
+	pkgOnce  func() (*packages.Package, error)
 }
 
 func New(
 	contents file.Contents,
-) Loader {
-	return Loader{
+) *Loader {
+	fset := token.NewFileSet()
+
+	l := &Loader{
 		contents: contents,
-		fset:     token.NewFileSet(),
+		Fset:     fset,
+
+		fileOnce: sync.OnceValues(func() (*ast.File, error) {
+			return parser.ParseFile(
+				fset,
+				contents.AbsPath,
+				contents.Contents,
+				parser.AllErrors|parser.ParseComments,
+			)
+		}),
 	}
+
+	l.pkgOnce = sync.OnceValues(l.loadPackage)
+	return l
 }
 
 func (l *Loader) ParseFile() (*ast.File, error) {
-	var err error
-	l.fOnce.Do(func() {
-		l.f, err = parser.ParseFile(
-			l.fset,
-			l.contents.AbsPath,
-			l.contents.Contents,
-			parser.AllErrors|parser.ParseComments,
-		)
-	})
-	return l.f, err
+	return l.fileOnce()
 }
 
 // parseFile is used in loadPkg
@@ -55,31 +57,35 @@ func (l *Loader) parseFile(
 		return l.ParseFile()
 	}
 
-	return parser.ParseFile(fset, filepath, src, parser.AllErrors|parser.ParseComments)
+	return parser.ParseFile(
+		fset,
+		filepath,
+		src,
+		parser.AllErrors|parser.ParseComments,
+	)
 }
 
-func (l *Loader) LoadPackage() error {
-	var err error
-	l.pkgOnce.Do(func() {
-		dir, _ := filepath.Split(l.contents.AbsPath)
+func (l *Loader) LoadPackage() (*packages.Package, error) {
+	return l.pkgOnce()
+}
 
-		var pkgs []*packages.Package
-		pkgs, err = packages.Load(
-			&packages.Config{
-				Mode:      packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
-				ParseFile: l.parseFile,
-			},
-			dir,
-		)
-		if err != nil {
-			return
-		}
+func (l *Loader) loadPackage() (*packages.Package, error) {
+	dir, _ := filepath.Split(l.contents.AbsPath)
 
-		if len(pkgs) != 1 {
-			panic(`should be unreachable; we only specify one package in the given pattern`)
-		}
+	pkgs, err := packages.Load(
+		&packages.Config{
+			Mode:      packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+			ParseFile: l.parseFile,
+		},
+		dir,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-		l.pkg = pkgs[0]
-	})
-	return err
+	if len(pkgs) != 1 {
+		panic(`should be unreachable; we only specify one package in the given pattern`)
+	}
+
+	return pkgs[0], nil
 }
