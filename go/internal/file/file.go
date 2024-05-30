@@ -33,6 +33,5 @@ func (r Range) ContainsPos(pos Position) bool {
 
 type Replacement struct {
 	Range Range    `json:"rng"`
-	Text  string   `json:"text,omitempty"`
 	Lines []string `json:"lns,omitempty"`
 }
