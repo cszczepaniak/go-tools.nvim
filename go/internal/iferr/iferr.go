@@ -5,59 +5,33 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/parser"
-	"go/token"
 	"go/types"
 	"io"
-	"path/filepath"
 	"strings"
 
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
+	"github.com/cszczepaniak/go-tools/internal/loader"
 	"golang.org/x/tools/go/ast/astutil"
-	"golang.org/x/tools/go/packages"
 )
 
 func Generate(
-	contents file.Contents,
+	l *loader.Loader,
 	pos file.Position,
 ) (file.Replacement, error) {
-	dir, _ := filepath.Split(contents.AbsPath)
-
-	pkgs, err := packages.Load(&packages.Config{
-		Mode: packages.NeedTypes | packages.NeedSyntax | packages.NeedTypesInfo,
-		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
-			if filename == contents.AbsPath {
-				src = contents.Contents
-			}
-			return parser.ParseFile(fset, filename, src, parser.AllErrors|parser.ParseComments)
-		},
-	}, dir)
+	astFile, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
 
-	if len(pkgs) != 1 {
-		return file.Replacement{}, errors.New("expected only one package")
+	pkg, err := l.LoadPackage()
+	if err != nil {
+		return file.Replacement{}, err
 	}
-
-	pkg := pkgs[0]
-	var astFile *ast.File
 
 	nodeContainsPos := func(n ast.Node) bool {
 		return asthelper.RangeFromNode(pkg.Fset, n).ContainsPos(pos)
-	}
-
-	for _, f := range pkg.Syntax {
-		if nodeContainsPos(f) {
-			astFile = f
-			break
-		}
-	}
-
-	if astFile == nil {
-		return file.Replacement{}, errors.New("did not find syntax tree for position")
 	}
 
 	indent := 0
