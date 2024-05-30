@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/parser"
 	"go/token"
 	"strings"
 	"unicode"
@@ -13,19 +12,14 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
+	"github.com/cszczepaniak/go-tools/internal/loader"
 )
 
 func Generate(
-	contents file.Contents,
+	l *loader.Loader,
 	pos file.Position,
 ) (file.Replacement, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(
-		fset,
-		contents.AbsPath,
-		contents.Contents,
-		parser.AllErrors,
-	)
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -38,7 +32,7 @@ func Generate(
 			continue
 		}
 
-		rng := asthelper.RangeFromNode(fset, decl)
+		rng := asthelper.RangeFromNode(l.Fset, decl)
 		if rng.ContainsPos(pos) {
 			typeDecl = gd
 
@@ -48,7 +42,7 @@ func Generate(
 					continue
 				}
 
-				rng = asthelper.RangeFromNode(fset, spec)
+				rng = asthelper.RangeFromNode(l.Fset, spec)
 				if rng.ContainsPos(pos) {
 					typeSpec = ts
 					break
@@ -70,7 +64,7 @@ func Generate(
 
 	lw := &linewriter.Writer{}
 
-	err = format.Node(lw, fset, typeDecl)
+	err = format.Node(lw, l.Fset, typeDecl)
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -114,7 +108,7 @@ func Generate(
 	lw.WriteLinef("}")
 
 	return file.Replacement{
-		Range: asthelper.RangeFromNode(fset, typeDecl),
+		Range: asthelper.RangeFromNode(l.Fset, typeDecl),
 		Lines: lw.TakeLines(),
 	}, err
 }
