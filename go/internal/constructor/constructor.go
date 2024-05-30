@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/token"
+	"go/types"
 	"strings"
 	"unicode"
 
@@ -20,6 +21,11 @@ func Generate(
 	pos file.Position,
 ) (file.Replacement, error) {
 	f, err := l.ParseFile()
+	if err != nil {
+		return file.Replacement{}, err
+	}
+
+	pkg, err := l.LoadPackage()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -62,6 +68,23 @@ func Generate(
 		return file.Replacement{}, nil
 	}
 
+	def, ok := pkg.TypesInfo.Defs[typeSpec.Name]
+	if !ok {
+		return file.Replacement{}, errors.New("no type info for struct type")
+	}
+
+	typ := def.Type()
+
+	var t *types.Struct
+	for typ != nil {
+		if st, ok := typ.(*types.Struct); ok {
+			t = st
+			break
+		}
+
+		typ = typ.Underlying()
+	}
+
 	lw := &linewriter.Writer{}
 
 	err = format.Node(lw, l.Fset, typeDecl)
@@ -71,7 +94,7 @@ func Generate(
 
 	lw.Flush()
 
-	// Add a blank lines between.
+	// Add a blank line between.
 	lw.WriteLinef("")
 
 	var fnName string
@@ -85,23 +108,55 @@ func Generate(
 
 	lw.WriteLinef("func %s(", fnName)
 
+	type fieldInfo struct {
+		typeStr      string
+		nameInStruct string
+		nameInFunc   string
+	}
+
+	idx := -1
+	maxStructMemberLen := 0
+	var fields []fieldInfo
 	for _, fld := range structType.Fields.List {
 		typStr, err := formatNodeToString(fld.Type)
 		if err != nil {
 			return file.Replacement{}, err
 		}
-		for _, n := range fld.Names {
-			lw.WriteLinef("\t%s %s,", lowerFirstRune(n.Name), typStr)
+
+		if len(fld.Names) == 0 {
+			idx++
+			v := t.Field(idx)
+
+			fields = append(fields, fieldInfo{
+				typeStr:      typStr,
+				nameInStruct: v.Name(),
+				nameInFunc:   lowerFirstRune(typStr),
+			})
+			maxStructMemberLen = max(maxStructMemberLen, len(v.Name()))
+		} else {
+			for _, n := range fld.Names {
+				idx++
+
+				fields = append(fields, fieldInfo{
+					typeStr:      typStr,
+					nameInStruct: n.Name,
+					nameInFunc:   lowerFirstRune(n.Name),
+				})
+				maxStructMemberLen = max(maxStructMemberLen, len(n.Name))
+			}
 		}
+	}
+
+	for _, f := range fields {
+		lw.WriteLinef("\t%s %s,", f.nameInFunc, f.typeStr)
 	}
 
 	lw.WriteLinef(") %s {", typeSpec.Name.Name)
 	lw.WriteLinef("\treturn %s{", typeSpec.Name.Name)
 
-	for _, fld := range structType.Fields.List {
-		for _, n := range fld.Names {
-			lw.WriteLinef("\t\t%s: %s,", n.Name, lowerFirstRune(n.Name))
-		}
+	for _, f := range fields {
+		padding := maxStructMemberLen - len(f.nameInStruct)
+		lw.WriteLinef("\t\t%s: %s%s,", f.nameInStruct, strings.Repeat(" ", padding), f.nameInFunc)
 	}
 
 	lw.WriteLinef("\t}")
