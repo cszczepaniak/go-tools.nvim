@@ -79,60 +79,17 @@ func Generate(
 		return file.Replacement{}, fmt.Errorf("dev error: unexpected surrounding %T", surrounding)
 	}
 
-	if len(assnStmt.Lhs) == 0 {
-		e.Info("lhs had no items")
-		return file.Replacement{}, nil
-	}
-
-	if len(assnStmt.Rhs) != 1 {
-		e.WithFields(map[string]any{"rhs": len(assnStmt.Rhs)}).Info("rhs did not have one item")
-		return file.Replacement{}, nil
-	}
-
-	rhs := assnStmt.Rhs[0]
-	typ, ok := pkg.TypesInfo.Types[rhs]
-	if !ok {
-		e.Info("rhs had no type info")
-		return file.Replacement{}, nil
-	}
-
-	var t *types.Named
-	var idx int
-	switch typ := typ.Type.(type) {
-	case *types.Tuple:
-		val := typ.At(typ.Len() - 1).Type()
-		if tt, ok := val.(*types.Named); ok {
-			t = tt
-			idx = typ.Len() - 1
-		} else {
-			e.WithField(logging.TypeKey, val).Info("last return value was not a named type")
-			return file.Replacement{}, nil
+	errName := ""
+	for _, e := range assnStmt.Lhs {
+		if id, ok := e.(*ast.Ident); ok {
+			t, ok := pkg.TypesInfo.Uses[id]
+			if ok && isErrorType(t.Type()) {
+				errName = id.Name
+			}
 		}
-	case *types.Named:
-		t = typ
-		idx = 0
 	}
-
-	if !isErrorType(t) {
-		e.WithField("typStr", t).Info("last return value was not an error")
-		return file.Replacement{}, nil
-	}
-
-	if idx >= len(assnStmt.Lhs) {
-		e.Info("err index exceeds length of lhs")
-		return file.Replacement{}, nil
-	}
-
-	lhs := assnStmt.Lhs[idx]
-	ident, ok := lhs.(*ast.Ident)
-	if !ok {
-		e.WithField(logging.TypeKey, lhs).Info("assignment target not an identifier")
-		return file.Replacement{}, nil
-	}
-
-	errName := ident.Name
 	if errName == "" {
-		e.Info("empty error name")
+		e.Info("lhs did not have an error type")
 		return file.Replacement{}, nil
 	}
 
