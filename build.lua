@@ -1,3 +1,3 @@
 vim.system({ "go", "install" }, {
-	cwd = "./go",
+	cwd = "~/.local/share/nvim/lazy/go-tools.nvim/go",
 })
