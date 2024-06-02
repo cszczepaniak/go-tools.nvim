@@ -82,12 +82,13 @@ func Generate(
 	errName := ""
 	for _, e := range assnStmt.Lhs {
 		if id, ok := e.(*ast.Ident); ok {
-			t, ok := pkg.TypesInfo.Uses[id]
-			if ok && isErrorType(t.Type()) {
+			t := pkg.TypesInfo.ObjectOf(id)
+			if t != nil && isErrorType(t.Type()) {
 				errName = id.Name
 			}
 		}
 	}
+
 	if errName == "" {
 		e.Info("lhs did not have an error type")
 		return file.Replacement{}, nil
