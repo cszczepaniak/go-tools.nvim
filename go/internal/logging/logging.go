@@ -29,6 +29,10 @@ func WithFields(fields map[string]any) loggingEntry {
 	return loggingEntry{fields: fields}
 }
 
+func WithField(k string, v any) loggingEntry {
+	return loggingEntry{fields: map[string]any{k: v}}
+}
+
 func Debug(msg string) {
 	logger.Debug(msg)
 }
