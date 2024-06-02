@@ -2,18 +2,18 @@ package logging
 
 import (
 	"io"
-
-	"github.com/charmbracelet/log"
+	"log/slog"
 )
 
-var logger *log.Logger
+var logger *slog.Logger
 
 func InitLogger(w io.Writer) {
-	logger = log.New(w)
+	logger = slog.New(
+		slog.NewTextHandler(w, &slog.HandlerOptions{}),
+	)
 }
 
 type loggingEntry struct {
-	l      *log.Logger
 	fields map[string]any
 }
 
