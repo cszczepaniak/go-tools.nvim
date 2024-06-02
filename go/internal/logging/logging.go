@@ -3,6 +3,7 @@ package logging
 import (
 	"io"
 	"log/slog"
+	"os"
 )
 
 var logger *slog.Logger
@@ -11,6 +12,37 @@ func InitLogger(w io.Writer) {
 	logger = slog.New(
 		slog.NewTextHandler(w, &slog.HandlerOptions{}),
 	)
+}
+
+func WithError(err error) loggingEntry {
+	e := loggingEntry{fields: make(map[string]any)}
+	return e.WithError(err)
+}
+
+func WithFields(fields map[string]any) loggingEntry {
+	return loggingEntry{fields: fields}
+}
+
+func Debug(msg string) {
+	logger.Debug(msg)
+}
+
+func Info(msg string) {
+	logger.Info(msg)
+}
+
+func Warn(msg string) {
+	logger.Warn(msg)
+}
+
+func Error(msg string) {
+	logger.Error(msg)
+}
+
+// Fatal logs at the error level and then exits with code 1.
+func Fatal(msg string) {
+	logger.Error(msg)
+	os.Exit(1)
 }
 
 type loggingEntry struct {
@@ -43,6 +75,12 @@ func (l loggingEntry) Warn(msg string) {
 
 func (l loggingEntry) Error(msg string) {
 	logger.Error(msg, l.getKVs()...)
+}
+
+// Fatal logs at the error level and then exits with code 1.
+func (l loggingEntry) Fatal(msg string) {
+	logger.Error(msg, l.getKVs()...)
+	os.Exit(1)
 }
 
 func (l loggingEntry) getKVs() []any {

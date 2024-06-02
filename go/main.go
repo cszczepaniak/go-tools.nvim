@@ -37,12 +37,12 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		panic("must provide one arg")
+		logging.Fatal("must provide one arg")
 	}
 
 	parts := strings.Split(os.Args[1], ",")
 	if len(parts) != 3 {
-		panic("arg must be of the form: filename,linenumber,colnumber")
+		logging.Fatal("argument must be of the form: filename,linenumber,colnumber")
 	}
 
 	filePath := parts[0]
@@ -51,17 +51,17 @@ func main() {
 
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
-		panic(err)
+		logging.WithError(err).Fatal("error getting absolute path of file")
 	}
 
 	line, err := strconv.Atoi(lineStr)
 	if err != nil {
-		panic(err)
+		logging.WithError(err).Fatal("error converting line to int")
 	}
 
 	col, err := strconv.Atoi(colStr)
 	if err != nil {
-		panic(err)
+		logging.WithError(err).Fatal("error converting column to int")
 	}
 
 	repl, err := internal.GenerateReplacements(
@@ -75,7 +75,7 @@ func main() {
 		},
 	)
 	if err != nil {
-		panic(err)
+		logging.WithError(err).Fatal("error generating replacements")
 	}
 
 	if len(repl.Lines) == 0 {
@@ -84,7 +84,7 @@ func main() {
 
 	err = json.NewEncoder(os.Stdout).Encode(repl)
 	if err != nil {
-		panic(err)
+		logging.WithError(err).Fatal("error encoding replacement to JSON")
 	}
 }
 
