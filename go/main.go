@@ -19,8 +19,14 @@ func main() {
 		panic(err)
 	}
 
+	dir := filepath.Join(homeDir, ".go-tools")
+	err = os.MkdirAll(dir, 0o755)
+	if err != nil {
+		panic(err)
+	}
+
 	logFile, err := os.OpenFile(
-		filepath.Join(homeDir, ".go-tools", "log.txt"),
+		filepath.Join(dir, "log.txt"),
 		os.O_CREATE|os.O_APPEND|os.O_WRONLY,
 		0o666,
 	)
