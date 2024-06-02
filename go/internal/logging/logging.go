@@ -8,9 +8,11 @@ import (
 
 var logger *slog.Logger
 
+var _ slog.Handler = textHandler{}
+
 func InitLogger(w io.Writer) {
 	logger = slog.New(
-		slog.NewTextHandler(w, &slog.HandlerOptions{}),
+		textHandler{w: w},
 	)
 }
 
