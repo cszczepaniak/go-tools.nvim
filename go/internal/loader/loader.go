@@ -103,9 +103,9 @@ func (l *Loader) parseFileForLoadPkg(
 
 		// Strip away the bodies of all function declarations that don't contain our position. This
 		// speeds up type checking.
-		if fnDecl, ok := decl.(*ast.FuncDecl); ok {
-			fnDecl.Body = nil
-		}
+		// if fnDecl, ok := decl.(*ast.FuncDecl); ok {
+		// 	fnDecl.Body = nil
+		// }
 	}
 
 	return f, nil
