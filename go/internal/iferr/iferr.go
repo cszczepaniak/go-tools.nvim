@@ -22,7 +22,7 @@ func Generate(
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
 
-	pkg, err := l.LoadPackage()
+	_, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -55,6 +55,11 @@ func Generate(
 
 	replacementRange := asthelper.RangeFromNode(l.Fset, assnStmt)
 	finalIndent := l.IndentLevel()
+
+	pkg, err := l.LoadPackage()
+	if err != nil {
+		return file.Replacement{}, err
+	}
 
 	var funcTyp types.Type
 	switch s := surrounding.(type) {
