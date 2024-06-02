@@ -5,7 +5,8 @@ function M.run()
 		return
 	end
 
-	local pos = vim.fn.wordcount().cursor_bytes
+	-- cursor_bytes is 1-indexed, but the Go side will want it to be 0-indexed.
+	local pos = vim.fn.wordcount().cursor_bytes - 1
 	local file = vim.fn.expand("%")
 
 	local res = vim.system({
