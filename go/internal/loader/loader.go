@@ -1,10 +1,10 @@
 package loader
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"path/filepath"
 	"sync"
 
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
@@ -116,14 +116,12 @@ func (l *Loader) LoadPackage() (*packages.Package, error) {
 }
 
 func (l *Loader) loadPackage() (*packages.Package, error) {
-	dir, _ := filepath.Split(l.contents.AbsPath)
-
 	pkgs, err := packages.Load(
 		&packages.Config{
-			Mode:      packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
+			Mode:      packages.NeedTypes | packages.NeedTypesInfo,
 			ParseFile: l.parseFileForLoadPkg,
 		},
-		dir,
+		fmt.Sprintf("file=%s", l.contents.AbsPath),
 	)
 	if err != nil {
 		return nil, err
