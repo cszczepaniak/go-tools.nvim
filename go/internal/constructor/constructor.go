@@ -2,7 +2,6 @@ package constructor
 
 import (
 	"errors"
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/token"
@@ -20,7 +19,7 @@ func Generate(
 	l *loader.Loader,
 	offset int,
 ) (file.Replacement, error) {
-	pkg, err := l.LoadPackage()
+	_, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -48,23 +47,6 @@ func Generate(
 	structType, ok := typeSpec.Type.(*ast.StructType)
 	if !ok {
 		return file.Replacement{}, nil
-	}
-
-	def, ok := pkg.TypesInfo.Defs[typeSpec.Name]
-	if !ok {
-		return file.Replacement{}, errors.New("no type info for struct type")
-	}
-
-	typ := def.Type()
-
-	var t *types.Struct
-	for typ != nil {
-		if st, ok := typ.(*types.Struct); ok {
-			t = st
-			break
-		}
-
-		typ = typ.Underlying()
 	}
 
 	lw := &linewriter.Writer{}
@@ -107,12 +89,18 @@ func Generate(
 
 		if len(fld.Names) == 0 {
 			idx++
+
+			t, err := loadStructType(l, typeSpec)
+			if err != nil {
+				return file.Replacement{}, err
+			}
+
 			v := t.Field(idx)
 
 			fields = append(fields, fieldInfo{
 				typeStr:      typStr,
 				nameInStruct: v.Name(),
-				nameInFunc:   lowerFirstRune(typStr),
+				nameInFunc:   lowerFirstRune(v.Name()),
 			})
 			maxStructMemberLen = max(maxStructMemberLen, len(v.Name()))
 		} else {
@@ -166,38 +154,26 @@ func formatNodeToString(n ast.Node) (string, error) {
 	return sb.String(), nil
 }
 
-func getASTFileAndPosition(
-	fName string,
-	fPos int,
-	fset *token.FileSet,
-	syntax []*ast.File,
-) (*ast.File, token.Pos, error) {
-	var translatedPos token.Pos = -1
-	fset.Iterate(func(f *token.File) bool {
-		if f.Name() == fName {
-			translatedPos = f.Pos(fPos)
-			return false
+func loadStructType(l *loader.Loader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
+	pkg, err := l.LoadPackage()
+	if err != nil {
+		return nil, err
+	}
+
+	def, ok := pkg.TypesInfo.Defs[typeSpec.Name]
+	if !ok {
+		return nil, errors.New("no type info for struct type")
+	}
+
+	typ := def.Type()
+
+	for typ != nil {
+		if st, ok := typ.(*types.Struct); ok {
+			return st, nil
 		}
 
-		return true
-	})
-
-	var theFile *ast.File
-	for _, f := range syntax {
-		fmt.Println(f.Name)
-		if f.Pos() <= translatedPos && translatedPos <= f.End() {
-			theFile = f
-			break
-		}
+		typ = typ.Underlying()
 	}
 
-	if translatedPos == -1 {
-		return nil, 0, errors.New("did not find position in the given file")
-	}
-
-	if theFile == nil {
-		return nil, 0, errors.New("did not find AST for file")
-	}
-
-	return theFile, translatedPos, nil
+	return nil
 }
