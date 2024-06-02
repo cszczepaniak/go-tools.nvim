@@ -35,7 +35,7 @@ func main() {
 	}
 	defer logFile.Close()
 
-	logging.InitLogger(logFile)
+	logging.InitLogger(io.MultiWriter(os.Stderr, logFile))
 
 	fileContents, err := io.ReadAll(os.Stdin)
 	if err != nil {
