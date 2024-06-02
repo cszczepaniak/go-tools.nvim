@@ -10,9 +10,27 @@ import (
 
 	"github.com/cszczepaniak/go-tools/internal"
 	"github.com/cszczepaniak/go-tools/internal/file"
+	"github.com/cszczepaniak/go-tools/internal/logging"
 )
 
 func main() {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	logFile, err := os.OpenFile(
+		filepath.Join(homeDir, ".go-tools", "log.txt"),
+		os.O_CREATE|os.O_APPEND|os.O_WRONLY,
+		0o666,
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer logFile.Close()
+
+	logging.InitLogger(logFile)
+
 	fileContents, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		panic(err)
