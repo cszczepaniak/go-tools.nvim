@@ -16,7 +16,7 @@ func GenerateReplacements(
 		iferr.Generate,
 	}
 
-	l := loader.New(contents)
+	l := loader.New(contents, pos)
 
 	for _, fn := range fns {
 		r, err := fn(l, pos)

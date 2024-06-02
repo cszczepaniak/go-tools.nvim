@@ -7,12 +7,14 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"golang.org/x/tools/go/packages"
 )
 
 type Loader struct {
 	contents file.Contents
+	pos      file.Position
 
 	Fset *token.FileSet
 
@@ -22,12 +24,15 @@ type Loader struct {
 
 func New(
 	contents file.Contents,
+	pos file.Position,
 ) *Loader {
 	fset := token.NewFileSet()
 
 	l := &Loader{
 		contents: contents,
-		Fset:     fset,
+		pos:      pos,
+
+		Fset: fset,
 
 		fileOnce: sync.OnceValues(func() (*ast.File, error) {
 			return parser.ParseFile(
@@ -53,16 +58,35 @@ func (l *Loader) parseFile(
 	filepath string,
 	src []byte,
 ) (*ast.File, error) {
+	var f *ast.File
+	var err error
 	if filepath == l.contents.AbsPath {
-		return l.ParseFile()
+		f, err = l.ParseFile()
+	} else {
+		f, err = parser.ParseFile(
+			fset,
+			filepath,
+			src,
+			parser.AllErrors|parser.ParseComments,
+		)
+	}
+	if err != nil {
+		return nil, err
 	}
 
-	return parser.ParseFile(
-		fset,
-		filepath,
-		src,
-		parser.AllErrors|parser.ParseComments,
-	)
+	for _, decl := range f.Decls {
+		if asthelper.RangeFromNode(l.Fset, decl).ContainsPos(l.pos) {
+			continue
+		}
+
+		// Strip away the bodies of all function declarations that don't contain our position. This
+		// speeds up type checking.
+		if fnDecl, ok := decl.(*ast.FuncDecl); ok {
+			fnDecl.Body = nil
+		}
+	}
+
+	return f, nil
 }
 
 func (l *Loader) LoadPackage() (*packages.Package, error) {
