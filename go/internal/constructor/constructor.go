@@ -175,5 +175,5 @@ func loadStructType(l *loader.Loader, typeSpec *ast.TypeSpec) (*types.Struct, er
 		typ = typ.Underlying()
 	}
 
-	return nil
+	return nil, nil
 }
