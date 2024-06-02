@@ -20,11 +20,6 @@ func Generate(
 	l *loader.Loader,
 	offset int,
 ) (file.Replacement, error) {
-	f, err := l.ParseFile()
-	if err != nil {
-		return file.Replacement{}, err
-	}
-
 	pkg, err := l.LoadPackage()
 	if err != nil {
 		return file.Replacement{}, err
@@ -32,34 +27,21 @@ func Generate(
 
 	var typeDecl *ast.GenDecl
 	var typeSpec *ast.TypeSpec
-	for _, decl := range f.Decls {
-		gd, ok := decl.(*ast.GenDecl)
-		if !ok || gd.Tok != token.TYPE {
-			continue
-		}
 
-		rng := asthelper.RangeFromNode(l.Fset, decl)
-		if rng.ContainsPos(pos) {
-			typeDecl = gd
-
-			for _, spec := range gd.Specs {
-				ts, ok := spec.(*ast.TypeSpec)
-				if !ok {
-					continue
-				}
-
-				rng = asthelper.RangeFromNode(l.Fset, spec)
-				if rng.ContainsPos(pos) {
-					typeSpec = ts
-					break
+	for i, n := range l.ASTPath {
+		if ts, ok := n.(*ast.TypeSpec); ok {
+			typeSpec = ts
+			if i+1 < len(l.ASTPath) {
+				parent := l.ASTPath[i+1]
+				if decl, ok := parent.(*ast.GenDecl); ok {
+					typeDecl = decl
 				}
 			}
-
 			break
 		}
 	}
 
-	if typeSpec == nil || typeSpec.Name == nil {
+	if typeDecl == nil || typeSpec == nil || typeSpec.Name == nil {
 		return file.Replacement{}, nil
 	}
 
