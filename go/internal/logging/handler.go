@@ -23,7 +23,11 @@ func (t textHandler) Handle(_ context.Context, r slog.Record) error {
 
 	r.AddAttrs(t.attrs...)
 	r.Attrs(func(a slog.Attr) bool {
-		fmt.Fprintf(t.w, " %s", a)
+		if a.Key == TypeKey {
+			fmt.Fprintf(t.w, " %s=%T", a.Key, a.Value.Any())
+		} else {
+			fmt.Fprintf(t.w, " %s", a)
+		}
 		return true
 	})
 

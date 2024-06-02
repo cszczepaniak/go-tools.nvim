@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+const (
+	TypeKey = "type"
+)
+
 var logger *slog.Logger
 
 var _ slog.Handler = textHandler{}
@@ -61,6 +65,10 @@ func (l loggingEntry) WithFields(fields map[string]any) loggingEntry {
 		l.fields[k] = v
 	}
 	return l
+}
+
+func (l loggingEntry) WithField(k string, v any) loggingEntry {
+	return l.WithFields(map[string]any{k: v})
 }
 
 func (l loggingEntry) Debug(msg string) {
