@@ -5,22 +5,23 @@ function M.run()
 		return
 	end
 
-	local pos = vim.api.nvim_win_get_cursor(0)
-	local line = pos[1]
-	local col = pos[2] + 1
-
+	local pos = vim.fn.wordcount().cursor_bytes
 	local file = vim.fn.expand("%")
 
 	local res = vim.system({
 		"go-tools",
-		file .. "," .. tostring(line) .. "," .. tostring(col),
+		file .. "," .. tostring(pos),
 	}, {
 		text = true,
 		stdin = vim.api.nvim_buf_get_lines(0, 0, -1, false),
 	}):wait()
 
 	if res.code ~= 0 then
-		vim.notify("go-tools exited with non-zero code\n" .. "stdout:\n" .. res.stderr, vim.log.levels.ERROR, {})
+		vim.notify(
+			"go-tools exited with non-zero code\n" .. "stdout:\n" .. res.stdout .. "stderr:\n" .. res.stderr,
+			vim.log.levels.ERROR,
+			{}
+		)
 		return
 	end
 
