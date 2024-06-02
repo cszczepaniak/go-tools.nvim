@@ -173,7 +173,7 @@ func printZeroValue(w io.Writer, typ types.Type) error {
 		} else {
 			return printZeroValue(w, tr.Underlying())
 		}
-	case *types.Map, *types.Array, *types.Interface, *types.Pointer:
+	case *types.Map, *types.Slice, *types.Interface, *types.Pointer:
 		fmt.Fprint(w, "nil")
 	default:
 		return fmt.Errorf("I don't know how to handle %T", typ)
