@@ -22,10 +22,20 @@ func Generate(
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
 
-	_, err := l.ParseFile()
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
+
+	ast.Inspect(f, func(n ast.Node) bool {
+		if _, ok := n.(*ast.AssignStmt); ok {
+			logging.WithFields(map[string]any{
+				"pos": n.Pos(),
+				"end": n.End(),
+			}).Debug("assign stmt")
+		}
+		return true
+	})
 
 	var assnStmt *ast.AssignStmt
 	var surrounding ast.Node
@@ -175,6 +185,8 @@ func printZeroValue(w io.Writer, typ types.Type) error {
 		}
 	case *types.Map, *types.Slice, *types.Interface, *types.Pointer:
 		fmt.Fprint(w, "nil")
+	case *types.Array:
+		fmt.Fprintf(w, "%s{}", tr.String())
 	default:
 		return fmt.Errorf("I don't know how to handle %T", typ)
 	}
