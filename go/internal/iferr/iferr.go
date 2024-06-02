@@ -14,74 +14,37 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
 	"github.com/cszczepaniak/go-tools/internal/loader"
 	"github.com/cszczepaniak/go-tools/internal/logging"
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 func Generate(
 	l *loader.Loader,
-	pos file.Position,
+	offset int,
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
-
-	astFile, err := l.ParseFile()
-	if err != nil {
-		return file.Replacement{}, err
-	}
 
 	pkg, err := l.LoadPackage()
 	if err != nil {
 		return file.Replacement{}, err
 	}
 
-	nodeContainsPos := func(n ast.Node) bool {
-		return asthelper.RangeFromNode(pkg.Fset, n).ContainsPos(pos)
-	}
-
-	indent := 0
-	errName := ""
-	var replacementRange file.Range
 	var assnStmt *ast.AssignStmt
-	var finalIndent int
 	var surrounding ast.Node
-	astutil.Apply(astFile, func(c *astutil.Cursor) bool {
-		_, ok := c.Node().(*ast.BlockStmt)
-		if ok {
-			indent++
-			return true
+	for _, n := range l.ASTPath {
+		switch n := n.(type) {
+		case *ast.AssignStmt:
+			if assnStmt == nil {
+				assnStmt = n
+			}
+		case *ast.FuncDecl:
+			if assnStmt != nil {
+				surrounding = n
+			}
+		case *ast.FuncLit:
+			if assnStmt != nil {
+				surrounding = n
+			}
 		}
-
-		fd, ok := c.Node().(*ast.FuncDecl)
-		if ok && nodeContainsPos(fd) {
-			surrounding = fd
-		}
-
-		fl, ok := c.Node().(*ast.FuncLit)
-		if ok && nodeContainsPos(fl) {
-			surrounding = fl
-		}
-
-		assn, ok := c.Node().(*ast.AssignStmt)
-		if !ok {
-			return true
-		}
-
-		rng := asthelper.RangeFromNode(pkg.Fset, assn)
-		if !rng.ContainsPos(pos) {
-			return true
-		}
-		replacementRange = rng
-		assnStmt = assn
-		finalIndent = indent
-
-		return true
-	}, func(c *astutil.Cursor) bool {
-		_, ok := c.Node().(*ast.BlockStmt)
-		if ok {
-			indent--
-		}
-		return true
-	})
-
+	}
 	if surrounding == nil || assnStmt == nil {
 		e.WithFields(map[string]any{
 			"surroundingNil": surrounding == nil,
@@ -89,6 +52,9 @@ func Generate(
 		}).Info("surrounding function or assignment statement not found")
 		return file.Replacement{}, nil
 	}
+
+	replacementRange := asthelper.RangeFromNode(l.Fset, assnStmt)
+	finalIndent := l.IndentLevel()
 
 	var funcTyp types.Type
 	switch s := surrounding.(type) {
@@ -159,8 +125,7 @@ func Generate(
 		return file.Replacement{}, nil
 	}
 
-	errName = ident.Name
-
+	errName := ident.Name
 	if errName == "" {
 		e.Info("empty error name")
 		return file.Replacement{}, nil

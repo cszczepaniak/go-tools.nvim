@@ -47,27 +47,21 @@ func main() {
 	}
 
 	parts := strings.Split(os.Args[1], ",")
-	if len(parts) != 3 {
-		logging.Fatal("argument must be of the form: filename,linenumber,colnumber")
+	if len(parts) != 2 {
+		logging.Fatal("argument must be of the form: filename,byte_offset")
 	}
 
 	filePath := parts[0]
-	lineStr := parts[1]
-	colStr := parts[2]
+	byteOffsetStr := parts[1]
 
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
 		logging.WithError(err).Fatal("error getting absolute path of file")
 	}
 
-	line, err := strconv.Atoi(lineStr)
+	byteOffset, err := strconv.Atoi(byteOffsetStr)
 	if err != nil {
 		logging.WithError(err).Fatal("error converting line to int")
-	}
-
-	col, err := strconv.Atoi(colStr)
-	if err != nil {
-		logging.WithError(err).Fatal("error converting column to int")
 	}
 
 	repl, err := internal.GenerateReplacements(
@@ -75,10 +69,7 @@ func main() {
 			AbsPath:  absPath,
 			Contents: fileContents,
 		},
-		file.Position{
-			Line: line,
-			Col:  col,
-		},
+		byteOffset,
 	)
 	if err != nil {
 		logging.WithError(err).Fatal("error generating replacements")

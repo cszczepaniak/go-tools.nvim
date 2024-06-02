@@ -18,7 +18,7 @@ import (
 
 func Generate(
 	l *loader.Loader,
-	pos file.Position,
+	offset int,
 ) (file.Replacement, error) {
 	f, err := l.ParseFile()
 	if err != nil {

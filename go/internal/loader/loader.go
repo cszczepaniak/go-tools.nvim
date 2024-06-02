@@ -65,6 +65,16 @@ func (l *Loader) parseFile() (*ast.File, error) {
 	return f, nil
 }
 
+func (l *Loader) IndentLevel() int {
+	indent := 0
+	for i := len(l.ASTPath) - 1; i >= 0; i-- {
+		if _, ok := l.ASTPath[i].(*ast.BlockStmt); ok {
+			indent++
+		}
+	}
+	return indent
+}
+
 func (l *Loader) parseFileForLoadPkg(
 	fset *token.FileSet,
 	filepath string,

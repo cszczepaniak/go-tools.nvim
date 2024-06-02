@@ -40,7 +40,7 @@ func TestOmni(t *testing.T) {
 		t.Run(e.Name(), func(t *testing.T) {
 			for _, exp := range exps {
 				t.Run(exp.name, func(t *testing.T) {
-					for _, p := range exp.positions {
+					for _, p := range exp.offsets {
 						r, err := GenerateReplacements(contents, p)
 						require.NoError(t, err)
 						assert.Equal(t, exp.exp.Range, r.Range)
@@ -57,9 +57,9 @@ func TestOmni(t *testing.T) {
 }
 
 type testExpectation struct {
-	name      string
-	positions []file.Position
-	exp       file.Replacement
+	name    string
+	offsets []int
+	exp     file.Replacement
 }
 
 func getExpectations(t *testing.T, filepath string) []testExpectation {
@@ -84,6 +84,7 @@ func getExpectations(t *testing.T, filepath string) []testExpectation {
 	parsingInput := false
 	parsingExp := false
 	ln := 0
+	offset := 0
 	sc := bufio.NewScanner(bytes.NewReader(bs))
 	for sc.Scan() {
 		ln++
@@ -91,10 +92,9 @@ func getExpectations(t *testing.T, filepath string) []testExpectation {
 		if idx := strings.Index(sc.Text(), startPosTag); !parsingExp && idx != -1 {
 			exps = append(exps, testExpectation{
 				name: strings.TrimPrefix(sc.Text(), startPosTag+" "),
-				positions: []file.Position{{
-					Line: ln + 1,
-					Col:  idx + 1, // columns are 1-based
-				}},
+				offsets: []int{
+					offset,
+				},
 				exp: file.Replacement{
 					Range: file.Range{
 						Start: file.Position{
@@ -105,15 +105,12 @@ func getExpectations(t *testing.T, filepath string) []testExpectation {
 				},
 			})
 			parsingInput = true
-			continue
+			goto updateOffset
 		}
 
 		if idx := strings.Index(sc.Text(), endPosTag); !parsingExp && parsingInput && idx != -1 {
 			updateCurrent(func(exp testExpectation) testExpectation {
-				exp.positions = append(exp.positions, file.Position{
-					Line: ln,
-					Col:  idx + 1,
-				})
+				exp.offsets = append(exp.offsets, offset)
 				exp.exp.Range.Stop = file.Position{
 					Line: ln,
 					Col:  idx + 1, // columns are 1-based
@@ -121,17 +118,17 @@ func getExpectations(t *testing.T, filepath string) []testExpectation {
 				return exp
 			})
 			parsingInput = false
-			continue
+			goto updateOffset
 		}
 
 		if sc.Text() == startExpTag {
 			parsingExp = true
-			continue
+			goto updateOffset
 		}
 
 		if sc.Text() == endExpTag {
 			parsingExp = false
-			continue
+			goto updateOffset
 		}
 
 		if parsingExp {
@@ -140,6 +137,9 @@ func getExpectations(t *testing.T, filepath string) []testExpectation {
 				return exp
 			})
 		}
+
+	updateOffset:
+		offset += len(sc.Bytes()) + 1
 	}
 
 	return exps

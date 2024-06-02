@@ -12,9 +12,9 @@ import (
 
 func GenerateReplacements(
 	contents file.Contents,
-	pos file.Position,
+	offset int,
 ) (file.Replacement, error) {
-	fns := map[string]func(*loader.Loader, file.Position) (file.Replacement, error){
+	fns := map[string]func(*loader.Loader, int) (file.Replacement, error){
 		"constructor": constructor.Generate,
 		"iferr":       iferr.Generate,
 	}
@@ -24,11 +24,11 @@ func GenerateReplacements(
 		"iferr",
 	}
 
-	l := loader.New(contents, pos)
+	l := loader.New(contents, offset)
 
 	for _, name := range order {
 		t0 := time.Now()
-		r, err := fns[name](l, pos)
+		r, err := fns[name](l, offset)
 		logging.WithFields(map[string]any{"dur": time.Since(t0)}).Info(name + " finished")
 		if err != nil {
 			return file.Replacement{}, err
