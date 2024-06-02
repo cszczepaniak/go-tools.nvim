@@ -1,25 +1,35 @@
 package internal
 
 import (
+	"time"
+
 	"github.com/cszczepaniak/go-tools/internal/constructor"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/iferr"
 	"github.com/cszczepaniak/go-tools/internal/loader"
+	"github.com/cszczepaniak/go-tools/internal/logging"
 )
 
 func GenerateReplacements(
 	contents file.Contents,
 	pos file.Position,
 ) (file.Replacement, error) {
-	fns := []func(*loader.Loader, file.Position) (file.Replacement, error){
-		constructor.Generate,
-		iferr.Generate,
+	fns := map[string]func(*loader.Loader, file.Position) (file.Replacement, error){
+		"constructor": constructor.Generate,
+		"iferr":       iferr.Generate,
+	}
+
+	order := []string{
+		"constructor",
+		"iferr",
 	}
 
 	l := loader.New(contents, pos)
 
-	for _, fn := range fns {
-		r, err := fn(l, pos)
+	for _, name := range order {
+		t0 := time.Now()
+		r, err := fns[name](l, pos)
+		logging.WithFields(map[string]any{"dur": time.Since(t0)}).Info(name + " finished")
 		if err != nil {
 			return file.Replacement{}, err
 		}
