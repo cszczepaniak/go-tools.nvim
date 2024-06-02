@@ -47,19 +47,13 @@ func Generate(
 	var funcTyp types.Type
 	switch s := surrounding.(type) {
 	case *ast.FuncDecl:
-		t, ok := pkg.TypesInfo.Defs[s.Name]
-		if !ok {
-			return file.Replacement{}, errors.New("type info not found for func declaration")
-		}
-		funcTyp = t.Type()
+		funcTyp = pkg.TypesInfo.TypeOf(s.Name)
 	case *ast.FuncLit:
-		t, ok := pkg.TypesInfo.Types[s]
-		if !ok {
-			return file.Replacement{}, errors.New("type info not found for func literal")
-		}
-		funcTyp = t.Type
-	default:
-		return file.Replacement{}, fmt.Errorf("dev error: unexpected surrounding %T", surrounding)
+		funcTyp = pkg.TypesInfo.TypeOf(s)
+	}
+
+	if funcTyp == nil {
+		return file.Replacement{}, errors.New("type info not found for surrounding function")
 	}
 
 	errName := ""
