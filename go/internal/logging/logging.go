@@ -85,7 +85,7 @@ func (l loggingEntry) Fatal(msg string) {
 
 func (l loggingEntry) getKVs() []any {
 	kvs := make([]any, 0, 2*len(l.fields))
-	for k, v := range kvs {
+	for k, v := range l.fields {
 		kvs = append(kvs, k, v)
 	}
 	return kvs
