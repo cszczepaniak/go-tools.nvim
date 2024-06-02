@@ -13,6 +13,7 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
 	"github.com/cszczepaniak/go-tools/internal/loader"
+	"github.com/cszczepaniak/go-tools/internal/logging"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -20,6 +21,8 @@ func Generate(
 	l *loader.Loader,
 	pos file.Position,
 ) (file.Replacement, error) {
+	e := logging.WithFields(map[string]any{"handler": "iferr"})
+
 	astFile, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
@@ -80,6 +83,10 @@ func Generate(
 	})
 
 	if surrounding == nil || assnStmt == nil {
+		e.WithFields(map[string]any{
+			"surrounding": surrounding == nil,
+			"assn":        assnStmt == nil,
+		}).Info("surrounding function or assignment statement not found")
 		return file.Replacement{}, nil
 	}
 
@@ -102,16 +109,19 @@ func Generate(
 	}
 
 	if len(assnStmt.Lhs) == 0 {
+		e.Info("lhs had no items")
 		return file.Replacement{}, nil
 	}
 
 	if len(assnStmt.Rhs) != 1 {
+		e.WithFields(map[string]any{"rhs": len(assnStmt.Rhs)}).Info("rhs did not have one item")
 		return file.Replacement{}, nil
 	}
 
 	rhs := assnStmt.Rhs[0]
 	typ, ok := pkg.TypesInfo.Types[rhs]
 	if !ok {
+		e.Info("rhs had no type info")
 		return file.Replacement{}, nil
 	}
 
@@ -124,6 +134,7 @@ func Generate(
 			t = tt
 			idx = typ.Len() - 1
 		} else {
+			e.WithField(logging.TypeKey, val).Info("last return value was not a named type")
 			return file.Replacement{}, nil
 		}
 	case *types.Named:
@@ -132,22 +143,26 @@ func Generate(
 	}
 
 	if !isErrorType(t) {
+		e.WithField("typStr", t).Info("last return value was not an error")
 		return file.Replacement{}, nil
 	}
 
 	if idx >= len(assnStmt.Lhs) {
+		e.Info("err index exceeds length of lhs")
 		return file.Replacement{}, nil
 	}
 
 	lhs := assnStmt.Lhs[idx]
 	ident, ok := lhs.(*ast.Ident)
 	if !ok {
+		e.WithField(logging.TypeKey, lhs).Info("assignment target not an identifier")
 		return file.Replacement{}, nil
 	}
 
 	errName = ident.Name
 
 	if errName == "" {
+		e.Info("empty error name")
 		return file.Replacement{}, nil
 	}
 
