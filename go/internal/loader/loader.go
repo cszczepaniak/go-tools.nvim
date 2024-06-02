@@ -59,7 +59,7 @@ func (l *Loader) parseFile() (*ast.File, error) {
 	}
 
 	tokFile := l.Fset.File(f.Pos())
-	l.Pos = token.Pos(tokFile.Base() + l.cursorOffset - 1)
+	l.Pos = tokFile.Pos(l.cursorOffset)
 	l.ASTPath, _ = astutil.PathEnclosingInterval(f, l.Pos, l.Pos)
 
 	return f, nil
