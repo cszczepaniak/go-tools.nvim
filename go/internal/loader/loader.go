@@ -9,14 +9,17 @@ import (
 
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
+	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 )
 
 type Loader struct {
-	contents file.Contents
-	pos      file.Position
+	contents     file.Contents
+	cursorOffset int
 
-	Fset *token.FileSet
+	Fset    *token.FileSet
+	Pos     token.Pos
+	ASTPath []ast.Node
 
 	fileOnce func() (*ast.File, error)
 	pkgOnce  func() (*packages.Package, error)
@@ -24,26 +27,18 @@ type Loader struct {
 
 func New(
 	contents file.Contents,
-	pos file.Position,
+	cursorOffset int,
 ) *Loader {
 	fset := token.NewFileSet()
 
 	l := &Loader{
-		contents: contents,
-		pos:      pos,
+		contents:     contents,
+		cursorOffset: cursorOffset,
 
 		Fset: fset,
-
-		fileOnce: sync.OnceValues(func() (*ast.File, error) {
-			return parser.ParseFile(
-				fset,
-				contents.AbsPath,
-				contents.Contents,
-				parser.AllErrors|parser.ParseComments,
-			)
-		}),
 	}
 
+	l.fileOnce = sync.OnceValues(l.parseFile)
 	l.pkgOnce = sync.OnceValues(l.loadPackage)
 	return l
 }
@@ -52,8 +47,25 @@ func (l *Loader) ParseFile() (*ast.File, error) {
 	return l.fileOnce()
 }
 
-// parseFile is used in loadPkg
-func (l *Loader) parseFile(
+func (l *Loader) parseFile() (*ast.File, error) {
+	f, err := parser.ParseFile(
+		l.Fset,
+		l.contents.AbsPath,
+		l.contents.Contents,
+		parser.AllErrors|parser.ParseComments,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	tokFile := l.Fset.File(f.Pos())
+	l.Pos = token.Pos(tokFile.Base() + l.cursorOffset)
+	l.ASTPath, _ = astutil.PathEnclosingInterval(f, l.Pos, l.Pos)
+
+	return f, nil
+}
+
+func (l *Loader) parseFileForLoadPkg(
 	fset *token.FileSet,
 	filepath string,
 	src []byte,
@@ -75,7 +87,7 @@ func (l *Loader) parseFile(
 	}
 
 	for _, decl := range f.Decls {
-		if asthelper.RangeFromNode(l.Fset, decl).ContainsPos(l.pos) {
+		if asthelper.NodeContains(decl, l.Pos) {
 			continue
 		}
 
@@ -99,7 +111,7 @@ func (l *Loader) loadPackage() (*packages.Package, error) {
 	pkgs, err := packages.Load(
 		&packages.Config{
 			Mode:      packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo,
-			ParseFile: l.parseFile,
+			ParseFile: l.parseFileForLoadPkg,
 		},
 		dir,
 	)

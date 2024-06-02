@@ -33,6 +33,10 @@ func ClosestNodeOfType[T ast.Node](
 	return currNode
 }
 
+func NodeContains(n ast.Node, pos token.Pos) bool {
+	return n.Pos() <= pos && pos <= n.End()
+}
+
 func RangeFromNode(fset *token.FileSet, n ast.Node) file.Range {
 	pStart := fset.PositionFor(n.Pos(), false)
 	pEnd := fset.PositionFor(n.End(), false)
