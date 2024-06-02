@@ -27,24 +27,27 @@ func Generate(
 		return file.Replacement{}, err
 	}
 
-	var assnStmt *ast.AssignStmt
-	var surrounding ast.Node
-	for _, n := range l.ASTPath {
-		switch n := n.(type) {
-		case *ast.AssignStmt:
-			if assnStmt == nil {
-				assnStmt = n
-			}
-		case *ast.FuncDecl:
-			if assnStmt != nil {
-				surrounding = n
-			}
-		case *ast.FuncLit:
-			if assnStmt != nil {
-				surrounding = n
+	assnStmt, surrounding := func() (*ast.AssignStmt, ast.Node) {
+		var assnStmt *ast.AssignStmt
+		for _, n := range l.ASTPath {
+			switch n := n.(type) {
+			case *ast.AssignStmt:
+				if assnStmt == nil {
+					assnStmt = n
+				}
+			case *ast.FuncDecl:
+				if assnStmt != nil {
+					return assnStmt, n
+				}
+			case *ast.FuncLit:
+				if assnStmt != nil {
+					return assnStmt, n
+				}
 			}
 		}
-	}
+		return nil, nil
+	}()
+
 	if surrounding == nil || assnStmt == nil {
 		e.WithFields(map[string]any{
 			"surroundingNil": surrounding == nil,
