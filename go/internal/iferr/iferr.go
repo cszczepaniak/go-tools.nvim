@@ -84,8 +84,8 @@ func Generate(
 
 	if surrounding == nil || assnStmt == nil {
 		e.WithFields(map[string]any{
-			"surrounding": surrounding == nil,
-			"assn":        assnStmt == nil,
+			"surroundingNil": surrounding == nil,
+			"assnNil":        assnStmt == nil,
 		}).Info("surrounding function or assignment statement not found")
 		return file.Replacement{}, nil
 	}
