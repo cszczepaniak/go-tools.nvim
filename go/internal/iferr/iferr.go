@@ -22,20 +22,10 @@ func Generate(
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
 
-	f, err := l.ParseFile()
+	_, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
-
-	ast.Inspect(f, func(n ast.Node) bool {
-		if _, ok := n.(*ast.AssignStmt); ok {
-			logging.WithFields(map[string]any{
-				"pos": n.Pos(),
-				"end": n.End(),
-			}).Debug("assign stmt")
-		}
-		return true
-	})
 
 	var assnStmt *ast.AssignStmt
 	var surrounding ast.Node
