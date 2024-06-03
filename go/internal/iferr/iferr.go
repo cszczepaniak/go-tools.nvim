@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"go/format"
 	"go/types"
 	"io"
 	"strings"
@@ -78,12 +77,21 @@ func Generate(
 
 	w := &linewriter.Writer{}
 
-	err = format.Node(w, pkg.Fset, assnStmt)
-	if err != nil {
-		return file.Replacement{}, err
-	}
+	tokFile := l.Fset.File(assnStmt.Pos())
+	start := tokFile.Offset(assnStmt.Pos())
+	stop := tokFile.Offset(assnStmt.End())
+	bs := l.Contents.BytesInRange(start, stop)
 
+	w.Write(bs)
 	w.Flush()
+
+	// err = format.Node(w, pkg.Fset, assnStmt)
+	// if err != nil {
+	// 	return file.Replacement{}, err
+	// }
+	//
+	// logging.Debug("done formatting node")
+	// w.Flush()
 	w.WriteLinef("%sif %s != nil {", strings.Repeat("\t", finalIndent), errName)
 
 	totalResults := sig.Results().Len()

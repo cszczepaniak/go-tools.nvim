@@ -51,11 +51,12 @@ func Generate(
 
 	lw := &linewriter.Writer{}
 
-	err = format.Node(lw, l.Fset, typeDecl)
-	if err != nil {
-		return file.Replacement{}, err
-	}
+	tokFile := l.Fset.File(typeDecl.Pos())
+	start := tokFile.Offset(typeDecl.Pos())
+	stop := tokFile.Offset(typeDecl.End())
+	bs := l.Contents.BytesInRange(start, stop)
 
+	lw.Write(bs)
 	lw.Flush()
 
 	// Add a blank line between.

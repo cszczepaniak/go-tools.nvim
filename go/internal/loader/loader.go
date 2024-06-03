@@ -16,12 +16,12 @@ import (
 )
 
 type Loader struct {
-	contents     file.Contents
 	cursorOffset int
 
-	Fset    *token.FileSet
-	Pos     token.Pos
-	ASTPath []ast.Node
+	Contents file.Contents
+	Fset     *token.FileSet
+	Pos      token.Pos
+	ASTPath  []ast.Node
 
 	fileOnce func() (*ast.File, error)
 	pkgOnce  func() (*packages.Package, error)
@@ -39,7 +39,7 @@ func New(
 	fset := token.NewFileSet()
 
 	l := &Loader{
-		contents:     contents,
+		Contents:     contents,
 		cursorOffset: cursorOffset,
 
 		Fset: fset,
@@ -57,8 +57,8 @@ func (l *Loader) ParseFile() (*ast.File, error) {
 func (l *Loader) parseFile() (*ast.File, error) {
 	f, err := parser.ParseFile(
 		l.Fset,
-		l.contents.AbsPath,
-		l.contents.Contents,
+		l.Contents.AbsPath,
+		l.Contents.Contents,
 		parser.AllErrors|parser.ParseComments,
 	)
 	if err != nil {
@@ -90,7 +90,7 @@ func (l *Loader) parseFileForLoadPkg(
 	l.nFilesParsed.Add(1)
 	var f *ast.File
 	var err error
-	if filepath == l.contents.AbsPath {
+	if filepath == l.Contents.AbsPath {
 		l.whenWasMyFileParsed.Store(l.nFilesParsed.Load())
 		f, err = l.ParseFile()
 	} else {
@@ -132,7 +132,7 @@ func (l *Loader) loadPackage() (*packages.Package, error) {
 			Mode:      packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo,
 			ParseFile: l.parseFileForLoadPkg,
 		},
-		fmt.Sprintf("file=%s", l.contents.AbsPath),
+		fmt.Sprintf("file=%s", l.Contents.AbsPath),
 	)
 	if err != nil {
 		return nil, err

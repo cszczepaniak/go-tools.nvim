@@ -5,6 +5,17 @@ type Contents struct {
 	Contents []byte
 }
 
+func (c Contents) BytesInRange(start, stop int) []byte {
+	if start > stop {
+		start, stop = stop, start
+	}
+
+	start = min(start, len(c.Contents))
+	stop = min(stop, len(c.Contents))
+
+	return c.Contents[start:stop]
+}
+
 type Position struct {
 	Line int `json:"ln"`
 	Col  int `json:"col"`
