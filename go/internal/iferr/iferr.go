@@ -110,7 +110,7 @@ func Generate(
 				fmt.Fprint(w, errName)
 			} else {
 				r := sig.Results().At(i)
-				err := printZeroValue(w, r.Type())
+				err := printZeroValue(w, pkg.PkgPath, r.Type())
 				if err != nil {
 					return file.Replacement{}, err
 				}
@@ -153,7 +153,7 @@ func findAssignmentAndSurroundingFunc(
 	return nil, nil
 }
 
-func printZeroValue(w io.Writer, typ types.Type) error {
+func printZeroValue(w io.Writer, myPkg string, typ types.Type) error {
 	switch tr := typ.(type) {
 	case *types.Basic:
 		switch {
@@ -166,12 +166,12 @@ func printZeroValue(w io.Writer, typ types.Type) error {
 		}
 	case *types.Named:
 		if _, ok := tr.Underlying().(*types.Struct); ok {
-			if tr.Obj().Pkg() != nil {
+			if tr.Obj().Pkg() != nil && tr.Obj().Pkg().Path() != myPkg {
 				fmt.Fprintf(w, "%s.", tr.Obj().Pkg().Name())
 			}
 			fmt.Fprintf(w, "%s{}", tr.Obj().Name())
 		} else {
-			return printZeroValue(w, tr.Underlying())
+			return printZeroValue(w, myPkg, tr.Underlying())
 		}
 	case *types.Map, *types.Slice, *types.Interface, *types.Pointer:
 		fmt.Fprint(w, "nil")

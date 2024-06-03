@@ -129,7 +129,7 @@ func (l *Loader) LoadPackageOnce() (*packages.Package, error) {
 func (l *Loader) loadPackage() (*packages.Package, error) {
 	pkgs, err := packages.Load(
 		&packages.Config{
-			Mode:      packages.NeedTypes | packages.NeedTypesInfo,
+			Mode:      packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo,
 			ParseFile: l.parseFileForLoadPkg,
 		},
 		fmt.Sprintf("file=%s", l.contents.AbsPath),
