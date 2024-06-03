@@ -155,7 +155,7 @@ func formatNodeToString(n ast.Node) (string, error) {
 }
 
 func loadStructType(l *loader.Loader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
-	pkg, err := l.LoadPackage()
+	pkg, err := l.LoadPackageOnce()
 	if err != nil {
 		return nil, err
 	}
