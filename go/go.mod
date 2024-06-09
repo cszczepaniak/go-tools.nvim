@@ -1,4 +1,4 @@
-module github.com/cszczepaniak/go-tools/go
+module github.com/cszczepaniak/go-tools.nvim/go
 
 go 1.21.0
 
