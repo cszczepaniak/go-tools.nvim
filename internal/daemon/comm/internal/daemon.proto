@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "github.com/cszczepaniak/go-tools/daemon/comm/internal";
+
+package routeguide;
+
+message Suggestion {
+  Range range = 1;
+  repeated string lines = 2;
+}
+
+message Position {
+  int64 line = 1;
+  int64 col = 2;
+}
+
+message Range {
+  Position Start = 1;
+  Position Stop = 2;
+}
+
+message FilePath { string Name = 1; }
+
+message FilePathAndContents {
+  FilePath path = 1;
+  bytes contents = 2;
+}
+
+message SuggestionInput {
+  string path = 1;
+  int64 cursorOffset = 2;
+}
+
+message Nothing {}
+
+service Daemon {
+  rpc PathChanged(FilePath) returns (Nothing);
+  rpc FileChanged(FilePathAndContents) returns (Nothing);
+  rpc Suggest(SuggestionInput) returns (Suggestion);
+}
