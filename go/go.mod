@@ -1,4 +1,4 @@
-module github.com/cszczepaniak/go-tools
+module github.com/cszczepaniak/go-tools/go
 
 go 1.21.0
 
