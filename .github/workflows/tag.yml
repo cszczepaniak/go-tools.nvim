@@ -33,6 +33,7 @@ jobs:
           echo "latest_tag=$(go run scripts/nexttag/main.go --latest)" >> $GITHUB_OUTPUT
           if git diff --name-only HEAD~1 | grep -v scripts/ | grep .go; then
             latest_tag="$(go run scripts/nexttag/main.go --latest)"
+            git log --oneline $latest_tag..HEAD
             echo "should_tag=true" >> $GITHUB_OUTPUT
             echo "commits<<EOF" >> $GITHUB_OUTPUT
             git log --oneline $latest_tag..HEAD >> $GITHUB_OUTPUT
