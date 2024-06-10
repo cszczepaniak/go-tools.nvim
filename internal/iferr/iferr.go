@@ -21,12 +21,12 @@ func Generate(
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
 
-	_, err := l.ParseFile()
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
 
-	assnStmt, surrounding := findAssignmentAndSurroundingFunc(l.ASTPath)
+	assnStmt, surrounding := findAssignmentAndSurroundingFunc(f.ASTPath)
 	if surrounding == nil || assnStmt == nil {
 		e.WithFields(map[string]any{
 			"surroundingNil": surrounding == nil,
@@ -35,8 +35,8 @@ func Generate(
 		return file.Replacement{}, nil
 	}
 
-	replacementRange := asthelper.RangeFromNode(l.Fset, assnStmt)
-	finalIndent := l.IndentLevel()
+	replacementRange := asthelper.RangeFromNode(f.Fset, assnStmt)
+	finalIndent := f.IndentLevel()
 
 	pkg, err := l.LoadPackage()
 	if err != nil {
@@ -77,7 +77,7 @@ func Generate(
 
 	w := &linewriter.Writer{}
 
-	tokFile := l.Fset.File(assnStmt.Pos())
+	tokFile := f.Fset.File(assnStmt.Pos())
 	start := tokFile.Offset(assnStmt.Pos())
 	stop := tokFile.Offset(assnStmt.End())
 	bs := l.Contents.BytesInRange(start, stop)

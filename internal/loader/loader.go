@@ -19,11 +19,8 @@ type Loader struct {
 	cursorOffset int
 
 	Contents file.Contents
-	Fset     *token.FileSet
-	Pos      token.Pos
-	ASTPath  []ast.Node
 
-	fileOnce func() (*ast.File, error)
+	fileOnce func() (File, error)
 	pkgOnce  func() (*packages.Package, error)
 
 	nFilesParsed        atomic.Int64
@@ -36,13 +33,9 @@ func New(
 	contents file.Contents,
 	cursorOffset int,
 ) *Loader {
-	fset := token.NewFileSet()
-
 	l := &Loader{
 		Contents:     contents,
 		cursorOffset: cursorOffset,
-
-		Fset: fset,
 	}
 
 	l.fileOnce = sync.OnceValues(l.parseFile)
@@ -50,36 +43,53 @@ func New(
 	return l
 }
 
-func (l *Loader) ParseFile() (*ast.File, error) {
+type File struct {
+	// File is the parsed file.
+	File *ast.File
+	// Fset is the fileset that was used when parsing the file.
+	Fset *token.FileSet
+	// Pos is the cursor position translated to a token.Pos.
+	Pos token.Pos
+	// ASTPath is the path containing the node at Pos.
+	ASTPath []ast.Node
+}
+
+func (f File) IndentLevel() int {
+	indent := 0
+	for i := len(f.ASTPath) - 1; i >= 0; i-- {
+		if _, ok := f.ASTPath[i].(*ast.BlockStmt); ok {
+			indent++
+		}
+	}
+	return indent
+}
+
+func (l *Loader) ParseFile() (File, error) {
 	return l.fileOnce()
 }
 
-func (l *Loader) parseFile() (*ast.File, error) {
+func (l *Loader) parseFile() (File, error) {
+	fset := token.NewFileSet()
 	f, err := parser.ParseFile(
-		l.Fset,
+		fset,
 		l.Contents.AbsPath,
 		l.Contents.Contents,
 		parser.AllErrors|parser.ParseComments,
 	)
 	if err != nil {
-		return nil, err
+		return File{}, err
 	}
 
-	tokFile := l.Fset.File(f.Pos())
-	l.Pos = tokFile.Pos(l.cursorOffset)
-	l.ASTPath, _ = astutil.PathEnclosingInterval(f, l.Pos, l.Pos)
+	tokFile := fset.File(f.Pos())
+	pos := tokFile.Pos(l.cursorOffset)
+	astPath, _ := astutil.PathEnclosingInterval(f, pos, pos)
 
-	return f, nil
-}
-
-func (l *Loader) IndentLevel() int {
-	indent := 0
-	for i := len(l.ASTPath) - 1; i >= 0; i-- {
-		if _, ok := l.ASTPath[i].(*ast.BlockStmt); ok {
-			indent++
-		}
-	}
-	return indent
+	return File{
+		File:    f,
+		Fset:    fset,
+		ASTPath: astPath,
+		Pos:     pos,
+	}, nil
 }
 
 func (l *Loader) parseFileForLoadPkg(
@@ -89,10 +99,17 @@ func (l *Loader) parseFileForLoadPkg(
 ) (*ast.File, error) {
 	l.nFilesParsed.Add(1)
 	var f *ast.File
+	var pos token.Pos
 	var err error
 	if filepath == l.Contents.AbsPath {
 		l.whenWasMyFileParsed.Store(l.nFilesParsed.Load())
-		f, err = l.ParseFile()
+		loadedFile, err := l.ParseFile()
+		if err != nil {
+			return nil, err
+		}
+
+		f = loadedFile.File
+		pos = loadedFile.Pos
 	} else {
 		f, err = parser.ParseFile(
 			fset,
@@ -110,7 +127,7 @@ func (l *Loader) parseFileForLoadPkg(
 		// speeds up type checking.
 		if fnDecl, ok := decl.(*ast.FuncDecl); ok {
 			l.totalFunctionsSeen.Add(1)
-			if asthelper.NodeContains(decl, l.Pos) {
+			if asthelper.NodeContains(decl, pos) {
 				continue
 			}
 

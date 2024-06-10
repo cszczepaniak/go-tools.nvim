@@ -19,7 +19,7 @@ func Generate(
 	l *loader.Loader,
 	offset int,
 ) (file.Replacement, error) {
-	_, err := l.ParseFile()
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -27,11 +27,11 @@ func Generate(
 	var typeDecl *ast.GenDecl
 	var typeSpec *ast.TypeSpec
 
-	for i, n := range l.ASTPath {
+	for i, n := range f.ASTPath {
 		if ts, ok := n.(*ast.TypeSpec); ok {
 			typeSpec = ts
-			if i+1 < len(l.ASTPath) {
-				parent := l.ASTPath[i+1]
+			if i+1 < len(f.ASTPath) {
+				parent := f.ASTPath[i+1]
 				if decl, ok := parent.(*ast.GenDecl); ok {
 					typeDecl = decl
 				}
@@ -51,7 +51,7 @@ func Generate(
 
 	lw := &linewriter.Writer{}
 
-	tokFile := l.Fset.File(typeDecl.Pos())
+	tokFile := f.Fset.File(typeDecl.Pos())
 	start := tokFile.Offset(typeDecl.Pos())
 	stop := tokFile.Offset(typeDecl.End())
 	bs := l.Contents.BytesInRange(start, stop)
@@ -134,7 +134,7 @@ func Generate(
 	lw.WriteLinef("}")
 
 	return file.Replacement{
-		Range: asthelper.RangeFromNode(l.Fset, typeDecl),
+		Range: asthelper.RangeFromNode(f.Fset, typeDecl),
 		Lines: lw.TakeLines(),
 	}, err
 }
