@@ -1,0 +1,27 @@
+name: Tag Go Version
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - master
+
+permissions:
+  contents: write
+
+jobs:
+  tag-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          fetch-tags: true
+
+      - name: Get Changed Files
+        run: |
+          if git diff --name-only HEAD~1 | grep .go; then
+            echo "some Go files changed"
+          else
+            echo "no Go files changed"
+          fi
