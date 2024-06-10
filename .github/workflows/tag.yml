@@ -30,14 +30,14 @@ jobs:
         id: changed_files
         run: |
           echo "next_tag=$(go run scripts/nexttag/main.go --next)" >> $GITHUB_OUTPUT
-          echo "latest_tag=$(go run scripts/nexttag/main.go --latest)" >> $GITHUB_OUTPUT
+
+          latest_tag="$(go run scripts/nexttag/main.go --latest)"
+          echo "commits<<EOF" >> $GITHUB_OUTPUT
+          git log --oneline $latest_tag..HEAD >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
           if git diff --name-only HEAD~1 | grep -v scripts/ | grep .go; then
-            latest_tag="$(go run scripts/nexttag/main.go --latest)"
-            git log --oneline $latest_tag..HEAD
             echo "should_tag=true" >> $GITHUB_OUTPUT
-            echo "commits<<EOF" >> $GITHUB_OUTPUT
-            git log --oneline $latest_tag..HEAD >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
           else
             echo "should_tag=false" >> $GITHUB_OUTPUT
           fi
