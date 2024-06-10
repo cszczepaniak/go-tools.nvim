@@ -29,11 +29,11 @@ jobs:
       - name: Get Changed Files
         id: changed_files
         run: |
-          echo "next_tag=$(go run scripts/nexttag/main.go)" >> $GITHUB_OUTPUT
+          echo "next_tag=$(go run scripts/nexttag/main.go)\n" >> $GITHUB_OUTPUT
           if git diff --name-only HEAD~1 | grep -v scripts/ | grep .go; then
-            echo "should_tag=true" >> $GITHUB_OUTPUT
+            echo "should_tag=true\n" >> $GITHUB_OUTPUT
           else
-            echo "should_tag=false" >> $GITHUB_OUTPUT
+            echo "should_tag=false\n" >> $GITHUB_OUTPUT
           fi
 
       - name: Foo
