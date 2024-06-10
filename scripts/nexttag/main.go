@@ -16,6 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(string(out))
 
 	r := bytes.NewReader(bytes.TrimSpace(out))
 	sc := bufio.NewScanner(r)
