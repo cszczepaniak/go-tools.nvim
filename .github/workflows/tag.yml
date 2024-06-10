@@ -43,9 +43,10 @@ jobs:
           fi
 
       - name: Foo
-        run: echo "${{ steps.changed_files.outputs.commits }}"
+        run: echo "${{ github.action.event }}"
 
       # - name: Create Release
+      #   if: ${{ steps.changed_files.outputs.should_tag == 'true' }}
       #   uses: actions/create-relase@v1
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,7 +54,8 @@ jobs:
       #     tag_name: "${{ steps.changed_files.outputs.next_tag }}"
       #     release_name: "${{ steps.changed_files.outputs.next_tag }}"
       #     body: |
-      #       Release
+      #       Commits:
+      #       ${{ steps.changed_files.outputs.commits }}
       #     draft: false
       #     prerelease: true
       #   run: |
