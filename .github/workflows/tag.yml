@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Foo
-        run: echo "${{ github.event.action }}"
+        run: echo "${{ github.event_name }}"
 
       # - name: Create Release
       #   if: ${{ steps.changed_files.outputs.should_tag == 'true' }}
