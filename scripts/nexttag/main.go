@@ -17,10 +17,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(out))
 
-	r := bytes.NewReader(bytes.TrimSpace(out))
-	sc := bufio.NewScanner(r)
+	trimmed := bytes.TrimSpace(out)
+	if len(trimmed) == 0 {
+		panic("expect to find at least one tag")
+	}
+
+	sc := bufio.NewScanner(bytes.NewReader(trimmed))
 
 	highest := semver{}
 	for sc.Scan() {
@@ -29,8 +32,6 @@ func main() {
 			fmt.Println("malformed semver: ", err)
 			continue
 		}
-
-		fmt.Println("saw tag:", s)
 
 		if s.cmp(highest) > 0 {
 			highest = s
