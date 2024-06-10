@@ -85,13 +85,6 @@ func Generate(
 	w.Write(bs)
 	w.Flush()
 
-	// err = format.Node(w, pkg.Fset, assnStmt)
-	// if err != nil {
-	// 	return file.Replacement{}, err
-	// }
-	//
-	// logging.Debug("done formatting node")
-	// w.Flush()
 	w.WriteLinef("%sif %s != nil {", strings.Repeat("\t", finalIndent), errName)
 
 	totalResults := sig.Results().Len()
