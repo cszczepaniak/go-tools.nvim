@@ -42,22 +42,16 @@ jobs:
             echo "should_tag=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Foo
-        run: echo "${{ github.event_name }}"
-
-      # - name: Create Release
-      #   if: ${{ steps.changed_files.outputs.should_tag == 'true' }}
-      #   uses: actions/create-relase@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: "${{ steps.changed_files.outputs.next_tag }}"
-      #     release_name: "${{ steps.changed_files.outputs.next_tag }}"
-      #     body: |
-      #       Commits:
-      #       ${{ steps.changed_files.outputs.commits }}
-      #     draft: false
-      #     prerelease: true
-      #   run: |
-      #     echo 
-      #     echo "${{ steps.changed_files.outputs.should_tag }}"
+      - name: Create Release
+        if: ${{ steps.changed_files.outputs.should_tag == 'true' || github.event_name == 'workflow_dispatch' }}
+        uses: actions/create-relase@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "${{ steps.changed_files.outputs.next_tag }}"
+          release_name: "${{ steps.changed_files.outputs.next_tag }}"
+          body: |
+            Commits:
+            ${{ steps.changed_files.outputs.commits }}
+          draft: ${{ github.event_name == 'workflow_dispatch' }}
+          prerelease: true
