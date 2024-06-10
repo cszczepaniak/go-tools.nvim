@@ -11,22 +11,23 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
-	"github.com/cszczepaniak/go-tools/internal/loader"
 	"github.com/cszczepaniak/go-tools/internal/logging"
+	"github.com/cszczepaniak/go-tools/internal/suggestions"
 )
 
 func Generate(
-	l *loader.Loader,
+	l suggestions.PackageLoader,
+	contents file.Contents,
 	offset int,
 ) (file.Replacement, error) {
 	e := logging.WithFields(map[string]any{"handler": "iferr"})
 
-	_, err := l.ParseFile()
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
 
-	assnStmt, surrounding := findAssignmentAndSurroundingFunc(l.ASTPath)
+	assnStmt, surrounding := findAssignmentAndSurroundingFunc(f.ASTPath)
 	if surrounding == nil || assnStmt == nil {
 		e.WithFields(map[string]any{
 			"surroundingNil": surrounding == nil,
@@ -35,10 +36,10 @@ func Generate(
 		return file.Replacement{}, nil
 	}
 
-	replacementRange := asthelper.RangeFromNode(l.Fset, assnStmt)
-	finalIndent := l.IndentLevel()
+	replacementRange := asthelper.RangeFromNode(f.Fset, assnStmt)
+	finalIndent := f.IndentLevel()
 
-	pkg, err := l.LoadPackageOnce()
+	pkg, err := l.LoadPackage()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -77,21 +78,14 @@ func Generate(
 
 	w := &linewriter.Writer{}
 
-	tokFile := l.Fset.File(assnStmt.Pos())
+	tokFile := f.Fset.File(assnStmt.Pos())
 	start := tokFile.Offset(assnStmt.Pos())
 	stop := tokFile.Offset(assnStmt.End())
-	bs := l.Contents.BytesInRange(start, stop)
+	bs := contents.BytesInRange(start, stop)
 
 	w.Write(bs)
 	w.Flush()
 
-	// err = format.Node(w, pkg.Fset, assnStmt)
-	// if err != nil {
-	// 	return file.Replacement{}, err
-	// }
-	//
-	// logging.Debug("done formatting node")
-	// w.Flush()
 	w.WriteLinef("%sif %s != nil {", strings.Repeat("\t", finalIndent), errName)
 
 	totalResults := sig.Results().Len()

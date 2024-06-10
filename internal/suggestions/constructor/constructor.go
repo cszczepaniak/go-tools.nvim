@@ -12,14 +12,15 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
-	"github.com/cszczepaniak/go-tools/internal/loader"
+	"github.com/cszczepaniak/go-tools/internal/suggestions"
 )
 
 func Generate(
-	l *loader.Loader,
+	l suggestions.PackageLoader,
+	contents file.Contents,
 	offset int,
 ) (file.Replacement, error) {
-	_, err := l.ParseFile()
+	f, err := l.ParseFile()
 	if err != nil {
 		return file.Replacement{}, err
 	}
@@ -27,11 +28,11 @@ func Generate(
 	var typeDecl *ast.GenDecl
 	var typeSpec *ast.TypeSpec
 
-	for i, n := range l.ASTPath {
+	for i, n := range f.ASTPath {
 		if ts, ok := n.(*ast.TypeSpec); ok {
 			typeSpec = ts
-			if i+1 < len(l.ASTPath) {
-				parent := l.ASTPath[i+1]
+			if i+1 < len(f.ASTPath) {
+				parent := f.ASTPath[i+1]
 				if decl, ok := parent.(*ast.GenDecl); ok {
 					typeDecl = decl
 				}
@@ -51,10 +52,10 @@ func Generate(
 
 	lw := &linewriter.Writer{}
 
-	tokFile := l.Fset.File(typeDecl.Pos())
+	tokFile := f.Fset.File(typeDecl.Pos())
 	start := tokFile.Offset(typeDecl.Pos())
 	stop := tokFile.Offset(typeDecl.End())
-	bs := l.Contents.BytesInRange(start, stop)
+	bs := contents.BytesInRange(start, stop)
 
 	lw.Write(bs)
 	lw.Flush()
@@ -134,7 +135,7 @@ func Generate(
 	lw.WriteLinef("}")
 
 	return file.Replacement{
-		Range: asthelper.RangeFromNode(l.Fset, typeDecl),
+		Range: asthelper.RangeFromNode(f.Fset, typeDecl),
 		Lines: lw.TakeLines(),
 	}, err
 }
@@ -155,8 +156,8 @@ func formatNodeToString(n ast.Node) (string, error) {
 	return sb.String(), nil
 }
 
-func loadStructType(l *loader.Loader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
-	pkg, err := l.LoadPackageOnce()
+func loadStructType(l suggestions.PackageLoader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
+	pkg, err := l.LoadPackage()
 	if err != nil {
 		return nil, err
 	}
