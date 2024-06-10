@@ -44,7 +44,7 @@ jobs:
 
       - name: Create Release
         if: ${{ steps.changed_files.outputs.should_tag == 'true' || github.event_name == 'workflow_dispatch' }}
-        uses: actions/create-relase@v1
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
