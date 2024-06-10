@@ -15,7 +15,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          # It's disappointing that we have to use fetch-depth 0 here, but according to
+          # https://github.com/actions/checkout/issues/1471 this is a bug. We only
+          # actually need a depth of 2 here.
+          fetch-depth: 0
           fetch-tags: true
 
       - name: Setup Go
