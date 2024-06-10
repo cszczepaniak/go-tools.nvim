@@ -30,4 +30,5 @@ jobs:
           else
             echo "no Go files changed"
           fi
+          git tag
           go run scripts/nexttag/main.go
