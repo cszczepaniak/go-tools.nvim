@@ -12,11 +12,12 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/asthelper"
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
-	"github.com/cszczepaniak/go-tools/internal/loader"
+	"github.com/cszczepaniak/go-tools/internal/suggestions"
 )
 
 func Generate(
-	l *loader.Loader,
+	l suggestions.PackageLoader,
+	contents file.Contents,
 	offset int,
 ) (file.Replacement, error) {
 	f, err := l.ParseFile()
@@ -54,7 +55,7 @@ func Generate(
 	tokFile := f.Fset.File(typeDecl.Pos())
 	start := tokFile.Offset(typeDecl.Pos())
 	stop := tokFile.Offset(typeDecl.End())
-	bs := l.Contents.BytesInRange(start, stop)
+	bs := contents.BytesInRange(start, stop)
 
 	lw.Write(bs)
 	lw.Flush()
@@ -155,7 +156,7 @@ func formatNodeToString(n ast.Node) (string, error) {
 	return sb.String(), nil
 }
 
-func loadStructType(l *loader.Loader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
+func loadStructType(l suggestions.PackageLoader, typeSpec *ast.TypeSpec) (*types.Struct, error) {
 	pkg, err := l.LoadPackage()
 	if err != nil {
 		return nil, err

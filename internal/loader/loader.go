@@ -17,8 +17,7 @@ import (
 
 type Loader struct {
 	cursorOffset int
-
-	Contents file.Contents
+	contents     file.Contents
 
 	fileOnce func() (File, error)
 	pkgOnce  func() (*packages.Package, error)
@@ -34,7 +33,7 @@ func New(
 	cursorOffset int,
 ) *Loader {
 	l := &Loader{
-		Contents:     contents,
+		contents:     contents,
 		cursorOffset: cursorOffset,
 	}
 
@@ -72,8 +71,8 @@ func (l *Loader) parseFile() (File, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(
 		fset,
-		l.Contents.AbsPath,
-		l.Contents.Contents,
+		l.contents.AbsPath,
+		l.contents.Contents,
 		parser.AllErrors|parser.ParseComments,
 	)
 	if err != nil {
@@ -101,7 +100,7 @@ func (l *Loader) parseFileForLoadPkg(
 	var f *ast.File
 	var pos token.Pos
 	var err error
-	if filepath == l.Contents.AbsPath {
+	if filepath == l.contents.AbsPath {
 		l.whenWasMyFileParsed.Store(l.nFilesParsed.Load())
 		loadedFile, err := l.ParseFile()
 		if err != nil {
@@ -149,7 +148,7 @@ func (l *Loader) loadPackage() (*packages.Package, error) {
 			Mode:      packages.NeedName | packages.NeedTypes | packages.NeedTypesInfo,
 			ParseFile: l.parseFileForLoadPkg,
 		},
-		fmt.Sprintf("file=%s", l.Contents.AbsPath),
+		fmt.Sprintf("file=%s", l.contents.AbsPath),
 	)
 	if err != nil {
 		return nil, err
