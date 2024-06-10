@@ -39,7 +39,7 @@ func main() {
 	}
 
 	highest.patch++
-	fmt.Println(highest)
+	fmt.Print(highest)
 }
 
 type semver struct {
