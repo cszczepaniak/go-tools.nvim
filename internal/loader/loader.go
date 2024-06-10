@@ -122,7 +122,7 @@ func (l *Loader) parseFileForLoadPkg(
 	return f, nil
 }
 
-func (l *Loader) LoadPackageOnce() (*packages.Package, error) {
+func (l *Loader) LoadPackage() (*packages.Package, error) {
 	return l.pkgOnce()
 }
 

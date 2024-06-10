@@ -38,7 +38,7 @@ func Generate(
 	replacementRange := asthelper.RangeFromNode(l.Fset, assnStmt)
 	finalIndent := l.IndentLevel()
 
-	pkg, err := l.LoadPackageOnce()
+	pkg, err := l.LoadPackage()
 	if err != nil {
 		return file.Replacement{}, err
 	}
