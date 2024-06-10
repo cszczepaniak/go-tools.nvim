@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	fmt.Println("is this thing on")
 	out, err := exec.Command("git", "tag").CombinedOutput()
 	if err != nil {
 		panic(err)
