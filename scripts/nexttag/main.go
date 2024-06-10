@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"cmp"
 	"errors"
+	"flag"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -12,6 +13,14 @@ import (
 )
 
 func main() {
+	latest := flag.Bool("latest", false, "If true, print the most recent tag that exists.")
+	next := flag.Bool("next", false, "If true, print what would be the next patch version.")
+	flag.Parse()
+
+	if latest == next {
+		panic("must set either latest or next, but not both")
+	}
+
 	out, err := exec.Command("git", "tag").CombinedOutput()
 	if err != nil {
 		panic(err)
@@ -37,7 +46,10 @@ func main() {
 		}
 	}
 
-	highest.patch++
+	if *next {
+		highest.patch++
+	}
+
 	fmt.Print(highest)
 }
 

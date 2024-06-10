@@ -36,7 +36,15 @@ jobs:
             echo "should_tag=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Foo
+      - name: Create Release
+        uses: actions/create-relase@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "${{ steps.changed_files.outputs.next_tag }}"
+          release_name: "${{ steps.changed_files.outputs.next_tag }}"
+          draft: false
+          prerelease: true
         run: |
-          echo "${{ steps.changed_files.outputs.next_tag }}"
+          echo 
           echo "${{ steps.changed_files.outputs.should_tag }}"
