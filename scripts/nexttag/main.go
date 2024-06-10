@@ -28,6 +28,8 @@ func main() {
 			continue
 		}
 
+		fmt.Println("saw tag:", s)
+
 		if s.cmp(highest) > 0 {
 			highest = s
 		}
