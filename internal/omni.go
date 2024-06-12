@@ -9,6 +9,7 @@ import (
 	"github.com/cszczepaniak/go-tools/internal/suggestions"
 	"github.com/cszczepaniak/go-tools/internal/suggestions/constructor"
 	"github.com/cszczepaniak/go-tools/internal/suggestions/iferr"
+	"github.com/cszczepaniak/go-tools/internal/suggestions/selectorchain"
 )
 
 func GenerateReplacements(
@@ -20,7 +21,24 @@ func GenerateReplacements(
 		"iferr":       iferr.Generate,
 	}
 
+	needFile := map[string]suggestions.FileSuggestor{
+		"selectorchain": selectorchain.Generate,
+	}
+
 	l := loader.New(contents, offset)
+
+	for name, fn := range needFile {
+		t0 := time.Now()
+		r, err := fn(l, contents, offset)
+		logging.WithFields(map[string]any{"dur": time.Since(t0)}).Info(name + " finished")
+		if err != nil {
+			return file.Replacement{}, err
+		}
+
+		if len(r.Lines) != 0 {
+			return r, nil
+		}
+	}
 
 	for name, fn := range needPkg {
 		t0 := time.Now()
