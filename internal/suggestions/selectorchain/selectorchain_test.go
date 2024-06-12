@@ -8,8 +8,8 @@ import (
 
 	"github.com/cszczepaniak/go-tools/internal/file"
 	"github.com/cszczepaniak/go-tools/internal/linewriter"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/shoenig/test"
+	"github.com/shoenig/test/must"
 	"golang.org/x/tools/go/ast/astutil"
 )
 
@@ -22,7 +22,7 @@ func TestFindStartOfChain_AllCalls(t *testing.T) {
 
 	fset := token.NewFileSet()
 	root, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	a := findIdent(t, root, "A")
 	f := fset.File(a.Pos())
@@ -31,27 +31,27 @@ func TestFindStartOfChain_AllCalls(t *testing.T) {
 	startA := findStartOfChain(path)
 
 	call, ok := startA.(*ast.CallExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
 	sel, ok := call.Fun.(*ast.SelectorExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
-	assert.Equal(t, "D", sel.Sel.Name)
+	test.Eq(t, "D", sel.Sel.Name)
 
 	b := findIdent(t, root, "B")
 	path, _ = astutil.PathEnclosingInterval(root, b.Pos(), b.Pos())
 	startB := findStartOfChain(path)
-	assert.Equal(t, startA, startB)
+	test.Eq(t, startA, startB)
 
 	c := findIdent(t, root, "C")
 	path, _ = astutil.PathEnclosingInterval(root, c.Pos(), c.Pos())
 	startC := findStartOfChain(path)
-	assert.Equal(t, startA, startC)
+	test.Eq(t, startA, startC)
 
 	d := findIdent(t, root, "D")
 	path, _ = astutil.PathEnclosingInterval(root, d.Pos(), d.Pos())
 	startD := findStartOfChain(path)
-	assert.Equal(t, startA, startD)
+	test.Eq(t, startA, startD)
 
 	w := &linewriter.Writer{}
 	err = formatChain(
@@ -63,8 +63,8 @@ func TestFindStartOfChain_AllCalls(t *testing.T) {
 		},
 		startA,
 	)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"A().", "\tB().", "\tC().", "\tD()"}, w.TakeLines())
+	must.NoError(t, err)
+	test.Eq(t, []string{"A().", "\tB().", "\tC().", "\tD()"}, w.TakeLines())
 }
 
 func TestFindStartOfChain_AllCalls_ButWithParams(t *testing.T) {
@@ -76,7 +76,7 @@ func TestFindStartOfChain_AllCalls_ButWithParams(t *testing.T) {
 
 	fset := token.NewFileSet()
 	root, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	a := findIdent(t, root, "A")
 	f := fset.File(a.Pos())
@@ -85,27 +85,27 @@ func TestFindStartOfChain_AllCalls_ButWithParams(t *testing.T) {
 	startA := findStartOfChain(path)
 
 	call, ok := startA.(*ast.CallExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
 	sel, ok := call.Fun.(*ast.SelectorExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
-	assert.Equal(t, "D", sel.Sel.Name)
+	test.Eq(t, "D", sel.Sel.Name)
 
 	b := findIdent(t, root, "B")
 	path, _ = astutil.PathEnclosingInterval(root, b.Pos(), b.Pos())
 	startB := findStartOfChain(path)
-	assert.Equal(t, startA, startB)
+	test.Eq(t, startA, startB)
 
 	c := findIdent(t, root, "C")
 	path, _ = astutil.PathEnclosingInterval(root, c.Pos(), c.Pos())
 	startC := findStartOfChain(path)
-	assert.Equal(t, startA, startC)
+	test.Eq(t, startA, startC)
 
 	d := findIdent(t, root, "D")
 	path, _ = astutil.PathEnclosingInterval(root, d.Pos(), d.Pos())
 	startD := findStartOfChain(path)
-	assert.Equal(t, startA, startD)
+	test.Eq(t, startA, startD)
 
 	w := &linewriter.Writer{}
 	err = formatChain(
@@ -117,8 +117,8 @@ func TestFindStartOfChain_AllCalls_ButWithParams(t *testing.T) {
 		},
 		startA,
 	)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"A().", "\tB(x, y).", "\tC(y, z).", "\tD()"}, w.TakeLines())
+	must.NoError(t, err)
+	test.Eq(t, []string{"A().", "\tB(x, y).", "\tC(y, z).", "\tD()"}, w.TakeLines())
 }
 
 func TestFindStartOfChain_AllCalls_ButWithParams_AndNewlines(t *testing.T) {
@@ -133,7 +133,7 @@ func TestFindStartOfChain_AllCalls_ButWithParams_AndNewlines(t *testing.T) {
 
 	fset := token.NewFileSet()
 	root, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	a := findIdent(t, root, "A")
 	f := fset.File(a.Pos())
@@ -142,27 +142,27 @@ func TestFindStartOfChain_AllCalls_ButWithParams_AndNewlines(t *testing.T) {
 	startA := findStartOfChain(path)
 
 	call, ok := startA.(*ast.CallExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
 	sel, ok := call.Fun.(*ast.SelectorExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
-	assert.Equal(t, "D", sel.Sel.Name)
+	test.Eq(t, "D", sel.Sel.Name)
 
 	b := findIdent(t, root, "B")
 	path, _ = astutil.PathEnclosingInterval(root, b.Pos(), b.Pos())
 	startB := findStartOfChain(path)
-	assert.Equal(t, startA, startB)
+	test.Eq(t, startA, startB)
 
 	c := findIdent(t, root, "C")
 	path, _ = astutil.PathEnclosingInterval(root, c.Pos(), c.Pos())
 	startC := findStartOfChain(path)
-	assert.Equal(t, startA, startC)
+	test.Eq(t, startA, startC)
 
 	d := findIdent(t, root, "D")
 	path, _ = astutil.PathEnclosingInterval(root, d.Pos(), d.Pos())
 	startD := findStartOfChain(path)
-	assert.Equal(t, startA, startD)
+	test.Eq(t, startA, startD)
 
 	w := &linewriter.Writer{}
 	err = formatChain(
@@ -174,8 +174,8 @@ func TestFindStartOfChain_AllCalls_ButWithParams_AndNewlines(t *testing.T) {
 		},
 		startA,
 	)
-	require.NoError(t, err)
-	assert.Equal(
+	must.NoError(t, err)
+	test.Eq(
 		t,
 		[]string{
 			"A().",
@@ -199,7 +199,7 @@ func TestFindStartOfChain_AllNonCalls(t *testing.T) {
 
 	fset := token.NewFileSet()
 	root, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	a := findIdent(t, root, "A")
 	f := fset.File(a.Pos())
@@ -208,24 +208,24 @@ func TestFindStartOfChain_AllNonCalls(t *testing.T) {
 	startA := findStartOfChain(path)
 
 	sel, ok := startA.(*ast.SelectorExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
-	assert.Equal(t, "D", sel.Sel.Name)
+	test.Eq(t, "D", sel.Sel.Name)
 
 	b := findIdent(t, root, "B")
 	path, _ = astutil.PathEnclosingInterval(root, b.Pos(), b.Pos())
 	startB := findStartOfChain(path)
-	assert.Equal(t, startA, startB)
+	test.Eq(t, startA, startB)
 
 	c := findIdent(t, root, "C")
 	path, _ = astutil.PathEnclosingInterval(root, c.Pos(), c.Pos())
 	startC := findStartOfChain(path)
-	assert.Equal(t, startA, startC)
+	test.Eq(t, startA, startC)
 
 	d := findIdent(t, root, "D")
 	path, _ = astutil.PathEnclosingInterval(root, d.Pos(), d.Pos())
 	startD := findStartOfChain(path)
-	assert.Equal(t, startA, startD)
+	test.Eq(t, startA, startD)
 
 	w := &linewriter.Writer{}
 	err = formatChain(
@@ -237,8 +237,8 @@ func TestFindStartOfChain_AllNonCalls(t *testing.T) {
 		},
 		startA,
 	)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"A.", "\tB.", "\tC.", "\tD"}, w.TakeLines())
+	must.NoError(t, err)
+	test.Eq(t, []string{"A.", "\tB.", "\tC.", "\tD"}, w.TakeLines())
 }
 
 func TestFindStartOfChain_MixedCallsAndNonCalls(t *testing.T) {
@@ -250,7 +250,7 @@ func TestFindStartOfChain_MixedCallsAndNonCalls(t *testing.T) {
 
 	fset := token.NewFileSet()
 	root, err := parser.ParseFile(fset, "", src, parser.AllErrors)
-	require.NoError(t, err)
+	must.NoError(t, err)
 
 	a := findIdent(t, root, "A")
 
@@ -258,27 +258,27 @@ func TestFindStartOfChain_MixedCallsAndNonCalls(t *testing.T) {
 	startA := findStartOfChain(path)
 
 	call, ok := startA.(*ast.CallExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
 	sel, ok := call.Fun.(*ast.SelectorExpr)
-	require.True(t, ok)
+	must.True(t, ok)
 
-	assert.Equal(t, "D", sel.Sel.Name)
+	test.Eq(t, "D", sel.Sel.Name)
 
 	b := findIdent(t, root, "B")
 	path, _ = astutil.PathEnclosingInterval(root, b.Pos(), b.Pos())
 	startB := findStartOfChain(path)
-	assert.Equal(t, startA, startB)
+	test.Eq(t, startA, startB)
 
 	c := findIdent(t, root, "C")
 	path, _ = astutil.PathEnclosingInterval(root, c.Pos(), c.Pos())
 	startC := findStartOfChain(path)
-	assert.Equal(t, startA, startC)
+	test.Eq(t, startA, startC)
 
 	d := findIdent(t, root, "D")
 	path, _ = astutil.PathEnclosingInterval(root, d.Pos(), d.Pos())
 	startD := findStartOfChain(path)
-	assert.Equal(t, startA, startD)
+	test.Eq(t, startA, startD)
 }
 
 func findIdent(t *testing.T, root *ast.File, name string) *ast.Ident {
@@ -299,6 +299,6 @@ func findIdent(t *testing.T, root *ast.File, name string) *ast.Ident {
 		return true
 	})
 
-	require.NotNil(t, id)
+	must.NotNil(t, id)
 	return id
 }
