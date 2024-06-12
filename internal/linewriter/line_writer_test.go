@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/shoenig/test"
 )
 
 func TestLineWriter_Write(t *testing.T) {
@@ -15,7 +15,7 @@ func TestLineWriter_Write(t *testing.T) {
 	fmt.Fprintf(lw, "%s\n\n%d", "def", 123)
 
 	lns := lw.TakeLines()
-	assert.Equal(t, []string{
+	test.Eq(t, []string{
 		"abc",
 		"def",
 		"",
@@ -27,7 +27,7 @@ func TestLineWriter_Write(t *testing.T) {
 	fmt.Fprint(lw, "abc\n")
 
 	lns = lw.TakeLines()
-	assert.Equal(t, []string{
+	test.Eq(t, []string{
 		"abc",
 		"",
 	}, lns)
